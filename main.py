@@ -1,4 +1,3 @@
-# app.py
 from flask import Flask, render_template, request, redirect, url_for, Response
 import json
 import firebase_admin
@@ -9,27 +8,10 @@ from datetime import datetime
 import pandas as pd
 import os
 
-# Initialize Firebase
-# Check if running in production (Railway sets this environment variable)
-if os.environ.get('RAILWAY_ENVIRONMENT'):
-    # In production, use environment variables for credentials
-    cred_dict = json.loads(os.environ.get('FIREBASE_CREDENTIALS', '{}'))
-    if cred_dict:
-        cred = credentials.Certificate(cred_dict)
-    else:
-        # Fallback to file if environment variable isn't properly set
-        cred = credentials.Certificate("./iotlistrik.json")
-else:
-    # Local development uses file
-    cred = credentials.Certificate("./iotlistrik.json")
+cred = credentials.Certificate("./monitoring.json")
+firebase_admin.initialize_app(cred)
 
-# Initialize Firebase app if not already initialized
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
 
-db = firestore.client()
-
-# Your existing fuzzy logic function
 def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=0):
     # input Fuzzy
     daya_listrik = float(Power)
@@ -43,6 +25,7 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
     HasilDaya = [0, 0, 0]
     stopwatch = [0, 0, 0]
     biayalistrik = [0, 0]
+    # 3333
 
     rules = [[
             [[[0, 0], [0, 0], [0, 0]],
@@ -221,8 +204,19 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
     elif biaya < 7000:
         biayalistrik[1] = (biaya - 4000)/(7000 - 4000)
     else:
-        biayalistrik[1] = 1
+        biayalistrik[0] = 1
     # end fuzzyfication
+
+    print(waktu)
+    print(stopwatch)
+    print(daya_listrik)
+    print(Power)
+    print(Daya)
+    print(HasilDaya)
+    print(Sum_perangkat)
+    print(jumlahperangkat)
+    print(biaya)
+    print(biayalistrik)
 
     defuzzy = 0
     for i in range(3):
@@ -230,6 +224,7 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
             for k in range(3):
                 for l in range(3):
                     for m in range(2):
+                        print('i:', i, ' j:', j, ' k:', k, 'l:', l, 'm:', m)
                         rules[i][j][k][l][m] = min(
                             stopwatch[j], Power[i], HasilDaya[k], jumlahperangkat[l], biayalistrik[m])
                         defuzzy += rules[i][j][k][l][m]
@@ -300,6 +295,8 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
         (rules[2][1][0][2][1] * penggunaan_normal)+(rules[2][1][1][2][1] * penggunaan_normal)+(rules[2][1][2][2][1] * penggunaan_normal) +
         (rules[2][2][0][2][1] * penggunaan_tinggi)+(rules[2][2][1][2][1] * penggunaan_tinggi)+(rules[2][2][2][2][1] * penggunaan_tinggi))/defuzzy
 
+    print("Z adalah : "+str(z))
+
     if z <= 0.67:
         return {
             "fuzy": round(z, 2),
@@ -316,7 +313,7 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
             "text": "Penggunaan Tinggi"
         }
 
-# Helper functions
+
 def response(code, msg, data):
     return Response(status=code, response=json.dumps({
         "status": code == 200,
@@ -325,6 +322,7 @@ def response(code, msg, data):
         "data": data
     }), mimetype='application/json', headers={'Access-Control-Allow-Origin': '*'})
 
+
 def biaya(daya, total):
     if daya <= 900:
         return total * 1352
@@ -332,6 +330,7 @@ def biaya(daya, total):
         return total * 1452
     elif daya <= 3500 or daya <= 5500:
         return total * 1699
+
 
 def formatRupiah(angka):
     rupiah = ''
@@ -343,6 +342,39 @@ def formatRupiah(angka):
         panjang = len(angka)
     rupiah = angka + rupiah
     return rupiah
+
+
+db = firestore.client()
+
+# # make firetore beetwen date
+# enddate = enddate.replace(hour=23, minute=59, second=59)
+# # doc_ref = db.collection('DataBase3Jalur').where(
+# #     'TimeStamp', '>=', stardate).where('TimeStamp', '<=', enddate).get()
+
+# # powerTotal = []
+# # Arustotal = []
+# # energytotal = []
+# # arrayWaktu = []
+# # jumlahPerangkat = []
+# # for d in doc_ref:
+# #     docs = d.to_dict()
+# #     datetime_parse = docs['TimeStamp'].strftime("%Y-%m-%d")
+# #     if datetime_parse in arrayWaktu:
+# #         index = arrayWaktu.index(datetime_parse)
+# #         if 'powerUtama' in docs:
+# #             powerTotal[index] += docs['powerUtama']
+# #         if 'Arustotal' in docs:
+# #             Arustotal[index] += docs['Arustotal']
+# #         if 'energytotal' in docs:
+# #             energytotal[index] += docs['energytotal']
+# #     else:
+# #         powerTotal.append(docs['powerUtama'])
+# #         Arustotal.append(docs['Arustotal'])
+# #         energytotal.append(docs['energytotal'])
+# #         arrayWaktu.append(datetime_parse)
+# #         if 'JumlahPerangkat' in docs:
+# #             jumlahPerangkat.append(docs['JumlahPerangkat'])
+
 
 def getData(arrayWaktu, daya):
     dataFuzy = []
@@ -357,13 +389,14 @@ def getData(arrayWaktu, daya):
         dts = datetime.replace(dt, hour=23, minute=58,
                                second=59, microsecond=0)
         dtTwo = datetime.replace(dt, hour=23, minute=59, second=59)
-        
+        print(dts, dtTwo)
         getLastestDataFromFirestore = db.collection('DataBase3Jalur').where(
             'TimeStamp', ">=", dts).limit(1).get()
 
         if len(getLastestDataFromFirestore) == 0:
             continue
 
+        print(getLastestDataFromFirestore[0].to_dict())
         dataTerakhir = getLastestDataFromFirestore[len(
             getLastestDataFromFirestore) - 1].to_dict()
         timeElapse = dataTerakhir['TimeStamp'].replace(
@@ -380,7 +413,7 @@ def getData(arrayWaktu, daya):
             dataPerangkat = dataTerakhir['JumlahPerangkat']
         dataFuzy.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
-            "dataFuzy": fuzzyLogic(energyTerakhir, 3, daya, stopwatch, dataTerakhir['HargaListrik'] if 'HargaListrik' in dataTerakhir else 0),
+            "dataFuzy": fuzzyLogic(energyTerakhir, 3, daya, stopwatch, dataTerakhir['HargaListrik']),
         })
         resultTable.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
@@ -400,20 +433,15 @@ def getData(arrayWaktu, daya):
         "hargaTotal": "Rp. "+formatRupiah(round(hargaTotal))
     }
 
-# Create Flask app
+
 app = Flask(__name__)
 
-# Basic homepage
+
 @app.route('/', methods=['GET'])
 def index():
     return response(200, "OK", "Hello World")
 
-# API endpoint
-@app.route('/api', methods=['GET'])
-def api_root():
-    return response(200, "API Running", "Fuzzy Logic API")
 
-# Existing fuzzy endpoint
 @app.route('/fuzzy', methods=['POST'])
 def fuzzys():
     if 'start_date' not in request.json or 'end_date' not in request.json or 'daya' not in request.json:
@@ -429,29 +457,10 @@ def fuzzys():
     for dt in dtrange:
         arrayWaktu.append(dt.strftime("%Y-%m-%d"))
     data = getData(arrayWaktu, daya)
+    print("response", data)
     return response(200, "OK", data=data)
 
-# Handle CORS preflight requests
-@app.route('/fuzzy', methods=['OPTIONS'])
-def options_fuzzy():
-    resp = Response()
-    resp.headers['Access-Control-Allow-Origin'] = '*'
-    resp.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-    resp.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-    return resp
 
-# Error handler for 404
-@app.errorhandler(404)
-def not_found(e):
-    return response(404, "Not Found", None)
-
-# Error handler for 500
-@app.errorhandler(500)
-def server_error(e):
-    return response(500, "Server Error", None)
-
-if __name__ == '__main__':
-    # Get port from environment variable or use 5000 as default
-    port = int(os.environ.get('PORT', 5000))
-    # Set host to 0.0.0.0 to make the app accessible externally
-    app.run(host='0.0.0.0', port=port)
+if __name__ == "__main__":
+    print("Server is running on port 5000")
+    app.run(host="0.0.0.0", port=os.getenv('PORT', 5000))

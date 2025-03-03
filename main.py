@@ -440,6 +440,10 @@ def options_fuzzy():
     resp.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     return resp
 
+@app.route("/health")
+def health_check():
+    return "OK", 200
+
 # Error handler for 404
 @app.errorhandler(404)
 def not_found(e):

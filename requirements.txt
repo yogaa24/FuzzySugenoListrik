@@ -33,7 +33,7 @@ MarkupSafe==2.1.2
 msgpack==1.0.5
 numpy==1.26.0
 openpyxl==3.0.10
-pandas==1.5.3
+pandas>=2.0.0
 phonenumbers==8.13.4
 proto-plus==1.22.2
 protobuf==4.22.1

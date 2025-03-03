@@ -8,7 +8,7 @@ from datetime import datetime
 import pandas as pd
 import os
 
-cred = credentials.Certificate("./monitoring.json")
+cred = credentials.Certificate("./iotlistrik.json")
 firebase_admin.initialize_app(cred)
 
 

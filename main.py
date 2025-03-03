@@ -18,10 +18,10 @@ if os.environ.get('RAILWAY_ENVIRONMENT'):
         cred = credentials.Certificate(cred_dict)
     else:
         # Fallback to file if environment variable isn't properly set
-        cred = credentials.Certificate("./monitoring.json")
+        cred = credentials.Certificate("./iotlistrik.json")
 else:
     # Local development uses file
-    cred = credentials.Certificate("./monitoring.json")
+    cred = credentials.Certificate("./iotlistrik.json")
 
 # Initialize Firebase app if not already initialized
 if not firebase_admin._apps:

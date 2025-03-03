@@ -1,3 +1,9 @@
 [build]
-builder = "nixpacks"
-buildCommand = "pip install python-distutils-extra && pip install -r requirements.txt"
+builder = "NIXPACKS"
+watchPatterns = ["**/*.py"]
+
+[deploy]
+startCommand = "gunicorn app:app --bind 0.0.0.0:$PORT"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"

@@ -406,7 +406,7 @@ app = Flask(__name__)
 # Basic homepage
 @app.route('/', methods=['GET'])
 def index():
-    return render_template('index.html')
+    return response(200, "OK", "Hello World")
 
 # API endpoint
 @app.route('/api', methods=['GET'])
@@ -422,6 +422,7 @@ def fuzzys():
     start_date = request.json['start_date']
     end_date = request.json['end_date']
     daya = request.json['daya']
+    print("request", start_date, end_date, daya)
 
     dtrange = pd.date_range(start=start_date, end=end_date, freq='d')
     arrayWaktu = []

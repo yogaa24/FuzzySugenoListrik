@@ -408,6 +408,10 @@ app = Flask(__name__)
 def index():
     return response(200, "OK", "Hello World")
 
+@app.route("/health")
+def health_check():
+    return "OK", 200
+
 # API endpoint
 @app.route('/api', methods=['GET'])
 def api_root():

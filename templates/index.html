@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask Todo App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background-color: #f9f9f9;
+            margin: 8px 0;
+            padding: 12px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .add-form {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 0 4px 4px 0;
+        }
+        .delete-btn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Flask Todo App</h1>
+    
+    <div class="add-form">
+        <input type="text" id="new-task" placeholder="Tambahkan tugas baru...">
+        <button onclick="addTodo()">Tambah</button>
+    </div>
+    
+    <ul id="todo-list">
+        {% for todo in todos %}
+        <li>
+            <span>{{ todo.task }}</span>
+            <button class="delete-btn" onclick="deleteTodo('{{ todo.id }}')">Hapus</button>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <script>
+        function addTodo() {
+            const taskInput = document.getElementById('new-task');
+            const task = taskInput.value.trim();
+            
+            if (task) {
+                fetch('/api/todos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ task: task })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    taskInput.value = '';
+                    location.reload();
+                });
+            }
+        }
+
+        function deleteTodo(id) {
+            fetch(`/api/todos/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                }
+            });
+        }
+    </script>
+</body>
+</html>

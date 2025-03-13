@@ -1,35 +1,13 @@
-# app.py
-from flask import Flask, render_template, request, redirect, url_for, Response
+from flask import Flask, render_template, request, jsonify, Response
 import json
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
-import time
-from datetime import datetime
-import pandas as pd
 import os
+import pandas as pd
+from datetime import datetime
 
-# Initialize Firebase
-# Check if running in production (Railway sets this environment variable)
-if os.environ.get('RAILWAY_ENVIRONMENT'):
-    # In production, use environment variables for credentials
-    cred_dict = json.loads(os.environ.get('FIREBASE_CREDENTIALS', '{}'))
-    if cred_dict:
-        cred = credentials.Certificate(cred_dict)
-    else:
-        # Fallback to file if environment variable isn't properly set
-        cred = credentials.Certificate("./iotlistrik.json")
-else:
-    # Local development uses file
-    cred = credentials.Certificate("./iotlistrik.json")
+# Inisialisasi aplikasi Flask
+app = Flask(__name__)
 
-# Initialize Firebase app if not already initialized
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
-
-# Your existing fuzzy logic function
+# Fungsi Fuzzy Logic dari kode Anda
 def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=0):
     # input Fuzzy
     daya_listrik = float(Power)
@@ -316,15 +294,7 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
             "text": "Penggunaan Tinggi"
         }
 
-# Helper functions
-def response(code, msg, data):
-    return Response(status=code, response=json.dumps({
-        "status": code == 200,
-        "code": code,
-        "msg": msg,
-        "data": data
-    }), mimetype='application/json', headers={'Access-Control-Allow-Origin': '*'})
-
+# Fungsi untuk menghitung biaya listrik
 def biaya(daya, total):
     if daya <= 900:
         return total * 1352
@@ -333,6 +303,7 @@ def biaya(daya, total):
     elif daya <= 3500 or daya <= 5500:
         return total * 1699
 
+# Fungsi untuk format rupiah
 def formatRupiah(angka):
     rupiah = ''
     angka = str(angka)
@@ -344,54 +315,71 @@ def formatRupiah(angka):
     rupiah = angka + rupiah
     return rupiah
 
+# Fungsi untuk response format JSON standar
+def response(code, msg, data):
+    return Response(status=code, response=json.dumps({
+        "status": code == 200,
+        "code": code,
+        "msg": msg,
+        "data": data
+    }), mimetype='application/json', headers={'Access-Control-Allow-Origin': '*'})
+
+# Mock data untuk simulasi Firebase
+mock_data = {
+    "2025-03-01": {
+        "TimeStamp": datetime(2025, 3, 1, 23, 59, 59),
+        "energytotal": 0.85,
+        "HargaListrik": 4500,
+        "JumlahPerangkat": 3
+    },
+    "2025-03-02": {
+        "TimeStamp": datetime(2025, 3, 2, 23, 59, 59),
+        "energytotal": 1.2,
+        "HargaListrik": 5200,
+        "JumlahPerangkat": 4
+    },
+    "2025-03-03": {
+        "TimeStamp": datetime(2025, 3, 3, 23, 59, 59),
+        "energytotal": 1.8,
+        "HargaListrik": 6300,
+        "JumlahPerangkat": 5
+    }
+}
+
+# Fungsi simulasi untuk mendapatkan data dari Firebase (tanpa Firebase)
 def getData(arrayWaktu, daya):
     dataFuzy = []
     resultTable = []
     energyTotal = 0
     hargaTotal = 0
-    if len(arrayWaktu) < 0:
+    
+    if len(arrayWaktu) <= 0:
         return response(400, "Bad Request", data=None)
 
-    for i in range(len(arrayWaktu)):
-        dt = datetime.strptime(arrayWaktu[i], "%Y-%m-%d")
-        dts = datetime.replace(dt, hour=23, minute=58,
-                               second=59, microsecond=0)
-        dtTwo = datetime.replace(dt, hour=23, minute=59, second=59)
-        
-        getLastestDataFromFirestore = db.collection('DataBase3Jalur').where(
-            'TimeStamp', ">=", dts).limit(1).get()
-
-        if len(getLastestDataFromFirestore) == 0:
-            continue
-
-        dataTerakhir = getLastestDataFromFirestore[len(
-            getLastestDataFromFirestore) - 1].to_dict()
-        timeElapse = dataTerakhir['TimeStamp'].replace(
-            tzinfo=None) - dt.replace(tzinfo=None)
-        stopwatch = round(timeElapse.total_seconds() / 3600)
-        if 'energytotal' in dataTerakhir:
-            energyTerakhir = dataTerakhir['energytotal']
-        elif 'energyTotal' in dataTerakhir:
-            energyTerakhir = dataTerakhir['energyTotal']
-        else:
-            energyTerakhir = 0.00
-        dataPerangkat = 0
-        if 'JumlahPerangkat' in dataTerakhir:
-            dataPerangkat = dataTerakhir['JumlahPerangkat']
-        dataFuzy.append({
-            "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
-            "dataFuzy": fuzzyLogic(energyTerakhir, 3, daya, stopwatch, dataTerakhir['HargaListrik'] if 'HargaListrik' in dataTerakhir else 0),
-        })
-        resultTable.append({
-            "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
-            "power": dataPerangkat,
-            "energy": energyTerakhir,
-            "biaya": "Rp. "+formatRupiah(round(biaya(daya, energyTerakhir))),
-            "stopwatch": stopwatch,
-            "jumlah": dataTerakhir['JumlahPerangkat'] if 'JumlahPerangkat' in dataTerakhir else 0
-        })
-        energyTotal += energyTerakhir
-        hargaTotal += biaya(daya, energyTerakhir)
+    for tanggal in arrayWaktu:
+        if tanggal in mock_data:
+            data = mock_data[tanggal]
+            dt = datetime.strptime(tanggal, "%Y-%m-%d")
+            timeElapse = data['TimeStamp'] - dt
+            stopwatch = round(timeElapse.total_seconds() / 3600)
+            energyTerakhir = data['energytotal']
+            
+            dataFuzy.append({
+                "waktu": dt.strftime("%d - %m - %Y"),
+                "dataFuzy": fuzzyLogic(energyTerakhir, data['JumlahPerangkat'], daya, stopwatch, data['HargaListrik']),
+            })
+            
+            resultTable.append({
+                "waktu": dt.strftime("%d %B %Y"),
+                "power": data['JumlahPerangkat'],
+                "energy": energyTerakhir,
+                "biaya": "Rp. "+formatRupiah(round(biaya(daya, energyTerakhir))),
+                "stopwatch": stopwatch,
+                "jumlah": data['JumlahPerangkat']
+            })
+            
+            energyTotal += energyTerakhir
+            hargaTotal += biaya(daya, energyTerakhir)
 
     return {
         "dataFuzy": dataFuzy,
@@ -400,62 +388,34 @@ def getData(arrayWaktu, daya):
         "hargaTotal": "Rp. "+formatRupiah(round(hargaTotal))
     }
 
-# Create Flask app
-app = Flask(__name__)
+# Routes
+@app.route('/')
+def home():
+    return render_template('index.html')
 
-# Basic homepage
-@app.route('/', methods=['GET'])
-def index():
-    return response(200, "OK", "Hello World")
+@app.route('/api/fuzzy-test', methods=['GET'])
+def fuzzy_test():
+    # Uji sederhana fuzzy logic untuk memastikan fungsi bekerja
+    result = fuzzyLogic(1.5, 3, 950, 7, 5000)
+    return jsonify(result)
 
-# API endpoint
-@app.route('/api', methods=['GET'])
-def api_root():
-    return response(200, "API Running", "Fuzzy Logic API")
-
-# Existing fuzzy endpoint
-@app.route('/fuzzy', methods=['POST'])
-def fuzzys():
-    if 'start_date' not in request.json or 'end_date' not in request.json or 'daya' not in request.json:
-        return response(400, "Bad Request", data=None)
-
+@app.route('/api/fuzzy', methods=['POST'])
+def process_fuzzy():
+    if not request.json or 'start_date' not in request.json or 'end_date' not in request.json or 'daya' not in request.json:
+        return response(400, "Bad Request", {"error": "Missing required parameters"})
+    
     start_date = request.json['start_date']
     end_date = request.json['end_date']
-    daya = request.json['daya']
-    print("request", start_date, end_date, daya)
-
+    daya = float(request.json['daya'])
+    
+    # Generate date range
     dtrange = pd.date_range(start=start_date, end=end_date, freq='d')
-    arrayWaktu = []
-    for dt in dtrange:
-        arrayWaktu.append(dt.strftime("%Y-%m-%d"))
+    arrayWaktu = [dt.strftime("%Y-%m-%d") for dt in dtrange]
+    
+    # Proses data
     data = getData(arrayWaktu, daya)
-    return response(200, "OK", data=data)
-
-# Handle CORS preflight requests
-@app.route('/fuzzy', methods=['OPTIONS'])
-def options_fuzzy():
-    resp = Response()
-    resp.headers['Access-Control-Allow-Origin'] = '*'
-    resp.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-    resp.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-    return resp
-
-@app.route("/health")
-def health_check():
-    return "OK", 200
-
-# Error handler for 404
-@app.errorhandler(404)
-def not_found(e):
-    return response(404, "Not Found", None)
-
-# Error handler for 500
-@app.errorhandler(500)
-def server_error(e):
-    return response(500, "Server Error", None)
+    return response(200, "OK", data)
 
 if __name__ == '__main__':
-    # Get port from environment variable or use 5000 as default
     port = int(os.environ.get('PORT', 5000))
-    # Set host to 0.0.0.0 to make the app accessible externally
     app.run(host='0.0.0.0', port=port)

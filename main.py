@@ -8,8 +8,15 @@ from datetime import datetime
 import pandas as pd
 import os
 
-cred = credentials.Certificate("./iotlistrik.json")
-firebase_admin.initialize_app(cred)
+# Option 1: Load from environment variable
+if 'FIREBASE_CREDENTIALS' in os.environ:
+    cred_dict = json.loads(os.environ.get('FIREBASE_CREDENTIALS'))
+    cred = credentials.Certificate(cred_dict)
+    firebase_admin.initialize_app(cred)
+else:
+    # Option 2: Fall back to file if environment variable is not available
+    cred = credentials.Certificate("./iotlistrik.json")
+    firebase_admin.initialize_app(cred)
 
 
 def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=0):

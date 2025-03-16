@@ -390,7 +390,7 @@ def getData(arrayWaktu, daya):
                                second=59, microsecond=0)
         dtTwo = datetime.replace(dt, hour=23, minute=59, second=59)
         print(dts, dtTwo)
-        getLastestDataFromFirestore = db.collection('DataBase3Jalur').where(
+        getLastestDataFromFirestore = db.collection('DataBase1Jalur').where(
             'TimeStamp', ">=", dts).limit(1).get()
 
         if len(getLastestDataFromFirestore) == 0:

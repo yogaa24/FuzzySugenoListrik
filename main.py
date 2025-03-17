@@ -409,10 +409,10 @@ def getData(arrayWaktu, daya):
         timeElapse = dataTerakhir['TimeStamp'].replace(
             tzinfo=None) - dt.replace(tzinfo=None)
         stopwatch = round(timeElapse.total_seconds() / 3600)
-        if 'energytotal' in dataTerakhir:
-            energyTerakhir = dataTerakhir['energytotal']
-        elif 'energyTotal' in dataTerakhir:
-            energyTerakhir = dataTerakhir['energyTotal']
+        if 'energy' in dataTerakhir:
+            energyTerakhir = dataTerakhir['energy']
+        elif 'energy' in dataTerakhir:
+            energyTerakhir = dataTerakhir['energy']
         else:
             energyTerakhir = 0.00
         dataPerangkat = 0

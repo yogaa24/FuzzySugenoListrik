@@ -5,6 +5,7 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 import time
 from datetime import datetime
+from flask_cors import CORS
 import pandas as pd
 import os
 
@@ -442,6 +443,7 @@ def getData(arrayWaktu, daya):
 
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 @app.route('/', methods=['GET'])

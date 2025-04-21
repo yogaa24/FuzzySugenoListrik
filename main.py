@@ -412,8 +412,8 @@ def getData(arrayWaktu, daya):
         stopwatch = round(timeElapse.total_seconds() / 3600)
         if 'energy' in dataTerakhir:
             energyTerakhir = dataTerakhir['energy']
-        elif 'energy' in dataTerakhir:
-            energyTerakhir = dataTerakhir['energy']
+        elif 'Energy' in dataTerakhir:  # Huruf kapital berbeda
+            energyTerakhir = dataTerakhir['Energy']
         else:
             energyTerakhir = 0.00
         dataPerangkat = 0

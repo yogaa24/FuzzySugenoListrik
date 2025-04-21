@@ -355,7 +355,7 @@ def formatRupiah(angka):
     return rupiah
 
 
-db = firestore.client()
+db = firestore.Client()
 
 # # make firetore beetwen date
 # enddate = enddate.replace(hour=23, minute=59, second=59)

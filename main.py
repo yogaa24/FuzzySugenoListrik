@@ -6,6 +6,7 @@ from flask_cors import CORS
 import pandas as pd
 import os
 from google.cloud import firestore
+from google.cloud.firestore_v1 import FieldFilter
 
 # --------------------------
 # Inisialisasi Firestore
@@ -408,12 +409,12 @@ def getData(arrayWaktu, daya):
         
         # Use the new filter syntax instead of positional where arguments
         day_entries = (
-            db.collection('DataBase1Jalur')
-                .where(filter=("TimeStamp", ">=", start_of_day))
-                .where(filter=("TimeStamp", "<=", end_of_day))
-                .order_by("TimeStamp", direction=firestore.Query.DESCENDING)
-                .limit(1)
-                .get()
+            db.collection("DataBase1Jalur")
+            .where(filter=FieldFilter("TimeStamp", ">=", start_of_day))
+            .where(filter=FieldFilter("TimeStamp", "<=", end_of_day))
+            .order_by("TimeStamp", direction=firestore.Query.DESCENDING)
+            .limit(1)
+            .get()
         )
 
 

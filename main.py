@@ -6,7 +6,21 @@ from datetime import datetime
 from flask_cors import CORS
 import pandas as pd
 import os
+from google.oauth2 import service_account
 
+# Ambil dari environment variable
+firebase_creds = os.environ.get("FIREBASE_CREDENTIALS")
+if not firebase_creds:
+    raise Exception("FIREBASE_CREDENTIALS not found in environment variables")
+
+# Parse string JSON ke dictionary
+creds_dict = json.loads(firebase_creds)
+
+# Buat credentials dari dict
+credentials = service_account.Credentials.from_service_account_info(creds_dict)
+
+# Inisialisasi Firestore client
+db = firestore.Client(credentials=credentials, project=creds_dict.get("project_id"))
 
 
 def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=0):
@@ -341,7 +355,7 @@ def formatRupiah(angka):
     return rupiah
 
 
-db = firestore.Client()  # ✅ Ini baru support .filter()
+db = firestore.client()
 
 # # make firetore beetwen date
 # enddate = enddate.replace(hour=23, minute=59, second=59)

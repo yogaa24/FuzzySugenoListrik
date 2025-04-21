@@ -1,27 +1,24 @@
 from flask import Flask, render_template, request, redirect, url_for, Response
 import json
-from google.cloud import firestore
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
 import time
 from datetime import datetime
 from flask_cors import CORS
 import pandas as pd
 import os
-from google.oauth2 import service_account
 
-# Ambil isi credentials dari environment
-firebase_creds = os.environ.get("FIREBASE_CREDENTIALS")
+# Option 1: Load from environment variable
+if 'FIREBASE_CREDENTIALS' in os.environ:
+    cred_dict = json.loads(os.environ.get('FIREBASE_CREDENTIALS'))
+    cred = credentials.Certificate(cred_dict)
+    firebase_admin.initialize_app(cred)
+else:
+    # Option 2: Fall back to file if environment variable is not available
+    cred = credentials.Certificate("./iotlistrik.json")
+    firebase_admin.initialize_app(cred)
 
-if not firebase_creds:
-    raise Exception("Environment variable FIREBASE_CREDENTIALS tidak ditemukan!")
-
-# Convert string JSON ke dictionary
-creds_dict = json.loads(firebase_creds)
-
-# Buat credentials object dari dict
-credentials = service_account.Credentials.from_service_account_info(creds_dict)
-
-# Inisialisasi Firestore client dengan credentials custom
-db = firestore.Client(credentials=credentials, project=creds_dict.get("project_id"))
 
 def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=0):
     # input Fuzzy
@@ -355,7 +352,7 @@ def formatRupiah(angka):
     return rupiah
 
 
-db = firestore.Client()
+db = firestore.client()
 
 # # make firetore beetwen date
 # enddate = enddate.replace(hour=23, minute=59, second=59)
@@ -403,12 +400,9 @@ def getData(arrayWaktu, daya):
         end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
         
         # Get all entries for the day and sort by timestamp to find the last one
-        day_entries = db.collection('DataBase1Jalur')\
-        .filter('TimeStamp', '>=', start_of_day)\
-        .filter('TimeStamp', '<=', end_of_day)\
-        .order_by('TimeStamp', direction=firestore.Query.DESCENDING)\
-        .limit(1).get()
-
+        day_entries = db.collection('DataBase1Jalur').where(
+            'TimeStamp', ">=", start_of_day).where(
+            'TimeStamp', "<=", end_of_day).order_by('TimeStamp', direction=firestore.Query.DESCENDING).limit(1).get()
 
         if len(day_entries) == 0:
             continue

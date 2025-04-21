@@ -1,23 +1,29 @@
 from flask import Flask, render_template, request, redirect, url_for, Response
 import json
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
 import time
 from datetime import datetime
 from flask_cors import CORS
 import pandas as pd
 import os
+from google.cloud import firestore
 
-# Option 1: Load from environment variable
+# --------------------------
+# Inisialisasi Firestore
+# --------------------------
+
+# Buat file kredensial sementara jika variabel FIREBASE_CREDENTIALS tersedia
 if 'FIREBASE_CREDENTIALS' in os.environ:
-    cred_dict = json.loads(os.environ.get('FIREBASE_CREDENTIALS'))
-    cred = credentials.Certificate(cred_dict)
-    firebase_admin.initialize_app(cred)
-else:
-    # Option 2: Fall back to file if environment variable is not available
-    cred = credentials.Certificate("./iotlistrik.json")
-    firebase_admin.initialize_app(cred)
+    cred_json = os.environ['FIREBASE_CREDENTIALS']
+    cred_dict = json.loads(cred_json)
+
+    # Simpan ke file sementara
+    temp_path = "/tmp/firebase_credentials.json"
+    with open(temp_path, "w") as f:
+        json.dump(cred_dict, f)
+
+    # Set environment agar Google Cloud SDK bisa menggunakannya
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_path
+
 
 
 def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=0):
@@ -352,7 +358,8 @@ def formatRupiah(angka):
     return rupiah
 
 
-db = firestore.client()
+# Inisialisasi client Firestore
+db = firestore.Client()
 
 # # make firetore beetwen date
 # enddate = enddate.replace(hour=23, minute=59, second=59)

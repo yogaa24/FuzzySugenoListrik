@@ -3,7 +3,6 @@ import json
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
-from google.cloud.firestore_v1.base_query import FieldFilter
 import time
 from datetime import datetime
 from flask_cors import CORS
@@ -400,18 +399,10 @@ def getData(arrayWaktu, daya):
         # Set end of day
         end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
         
-        # Gunakan filter keyword argument dalam where()
-        query = db.collection('DataBase1Jalur')
-        
-        # Cara 1: Menggunakan FieldFilter
-        start_filter = FieldFilter("TimeStamp", ">=", start_of_day)
-        end_filter = FieldFilter("TimeStamp", "<=", end_of_day)
-        
-        query = query.where(filter=start_filter)
-        query = query.where(filter=end_filter)
-        query = query.order_by('TimeStamp', direction=firestore.Query.DESCENDING)
-        query = query.limit(1)
-        day_entries = query.get()
+        # Get all entries for the day and sort by timestamp to find the last one
+        day_entries = db.collection('DataBase1Jalur').where(
+            'TimeStamp', ">=", start_of_day).where(
+            'TimeStamp', "<=", end_of_day).order_by('TimeStamp', direction=firestore.Query.DESCENDING).limit(1).get()
 
         if len(day_entries) == 0:
             continue
@@ -419,7 +410,7 @@ def getData(arrayWaktu, daya):
         print(f"Last entry for {arrayWaktu[i]}:", day_entries[0].to_dict())
         dataTerakhir = day_entries[0].to_dict()
         
-        # Sisa kode tetap sama
+        # Calculate time elapsed from start of day to the last entry
         timeElapse = dataTerakhir['TimeStamp'].replace(
             tzinfo=None) - start_of_day.replace(tzinfo=None)
         stopwatch = round(timeElapse.total_seconds() / 3600)
@@ -458,6 +449,7 @@ def getData(arrayWaktu, daya):
         "energyTotal": round(energyTotal, 3),
         "hargaTotal": "Rp. "+formatRupiah(round(hargaTotal))
     }
+
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})

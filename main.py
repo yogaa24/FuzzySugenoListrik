@@ -407,7 +407,7 @@ def getData(arrayWaktu, daya):
             print("Directly fetching the known document for April 20")
             try:
                 # Try to fetch the specific document we saw in the screenshot
-                doc_ref = db.collection('DataBase1Jalur').document('dZc5vwzWS4UFpGm7C').get()
+                doc_ref = db.collection('DataBase1Jalur').document('dz6IvEiJWCm4vnASu').get()
                 if doc_ref.exists:
                     latest_entry = doc_ref.to_dict()
                     print(f"Successfully fetched document: {latest_entry}")

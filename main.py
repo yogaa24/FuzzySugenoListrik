@@ -3,6 +3,7 @@ import json
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 import time
 from datetime import datetime
 from flask_cors import CORS
@@ -399,18 +400,15 @@ def getData(arrayWaktu, daya):
         # Set end of day
         end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
         
-        # # Gunakan where() dengan keyword arguments untuk menghindari peringatan
-        # query = db.collection('DataBase1Jalur')
-        # query = query.where(field_path="TimeStamp", op_string=">=", value=start_of_day)
-        # query = query.where(field_path="TimeStamp", op_string="<=", value=end_of_day)
-        # query = query.order_by('TimeStamp', direction=firestore.Query.DESCENDING)
-        # query = query.limit(1)
-        # day_entries = query.get()
-
-        # Jika masih muncul peringatan, gunakan versi ini sebagai alternatif:
+        # Gunakan filter keyword argument dalam where()
         query = db.collection('DataBase1Jalur')
-        query = query.where("TimeStamp", ">=", start_of_day)
-        query = query.where("TimeStamp", "<=", end_of_day)
+        
+        # Cara 1: Menggunakan FieldFilter
+        start_filter = FieldFilter("TimeStamp", ">=", start_of_day)
+        end_filter = FieldFilter("TimeStamp", "<=", end_of_day)
+        
+        query = query.where(filter=start_filter)
+        query = query.where(filter=end_filter)
         query = query.order_by('TimeStamp', direction=firestore.Query.DESCENDING)
         query = query.limit(1)
         day_entries = query.get()

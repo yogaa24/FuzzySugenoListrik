@@ -3,7 +3,6 @@ import json
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
-from google.cloud.firestore import FieldFilter
 import time
 from datetime import datetime
 from flask_cors import CORS
@@ -400,15 +399,21 @@ def getData(arrayWaktu, daya):
         # Set end of day
         end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
         
-        # Get all entries for the day and sort by timestamp to find the last one
-        # Menggunakan filter() dengan keyword argument daripada where()
-        # Contoh alternatif dengan FieldFilter
-        day_entries = db.collection('DataBase1Jalur') \
-            .filter(FieldFilter("TimeStamp", ">=", start_of_day)) \
-            .filter(FieldFilter("TimeStamp", "<=", end_of_day)) \
-            .order_by('TimeStamp', direction=firestore.Query.DESCENDING) \
-            .limit(1) \
-            .get()
+        # Gunakan where() dengan keyword arguments untuk menghindari peringatan
+        query = db.collection('DataBase1Jalur')
+        query = query.where(field_path="TimeStamp", op_string=">=", value=start_of_day)
+        query = query.where(field_path="TimeStamp", op_string="<=", value=end_of_day)
+        query = query.order_by('TimeStamp', direction=firestore.Query.DESCENDING)
+        query = query.limit(1)
+        day_entries = query.get()
+
+        # Jika masih muncul peringatan, gunakan versi ini sebagai alternatif:
+        # query = db.collection('DataBase1Jalur')
+        # query = query.where("TimeStamp", ">=", start_of_day)
+        # query = query.where("TimeStamp", "<=", end_of_day)
+        # query = query.order_by('TimeStamp', direction=firestore.Query.DESCENDING)
+        # query = query.limit(1)
+        # day_entries = query.get()
 
         if len(day_entries) == 0:
             continue
@@ -416,7 +421,7 @@ def getData(arrayWaktu, daya):
         print(f"Last entry for {arrayWaktu[i]}:", day_entries[0].to_dict())
         dataTerakhir = day_entries[0].to_dict()
         
-        # Calculate time elapsed from start of day to the last entry
+        # Sisa kode tetap sama
         timeElapse = dataTerakhir['TimeStamp'].replace(
             tzinfo=None) - start_of_day.replace(tzinfo=None)
         stopwatch = round(timeElapse.total_seconds() / 3600)

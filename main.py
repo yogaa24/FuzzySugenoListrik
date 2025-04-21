@@ -405,8 +405,7 @@ def getData(arrayWaktu, daya):
             continue
 
         print(getLastestDataFromFirestore[0].to_dict())
-        dataTerakhir = getLastestDataFromFirestore[len(
-            getLastestDataFromFirestore) - 1].to_dict()
+        dataTerakhir = getLastestDataFromFirestore[0].to_dict()
         timeElapse = dataTerakhir['TimeStamp'].replace(
             tzinfo=None) - dt.replace(tzinfo=None)
         stopwatch = round(timeElapse.total_seconds() / 3600)

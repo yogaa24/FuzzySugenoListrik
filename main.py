@@ -399,21 +399,21 @@ def getData(arrayWaktu, daya):
         # Set end of day
         end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
         
-        # Gunakan where() dengan keyword arguments untuk menghindari peringatan
-        query = db.collection('DataBase1Jalur')
-        query = query.where(field_path="TimeStamp", op_string=">=", value=start_of_day)
-        query = query.where(field_path="TimeStamp", op_string="<=", value=end_of_day)
-        query = query.order_by('TimeStamp', direction=firestore.Query.DESCENDING)
-        query = query.limit(1)
-        day_entries = query.get()
-
-        # Jika masih muncul peringatan, gunakan versi ini sebagai alternatif:
+        # # Gunakan where() dengan keyword arguments untuk menghindari peringatan
         # query = db.collection('DataBase1Jalur')
-        # query = query.where("TimeStamp", ">=", start_of_day)
-        # query = query.where("TimeStamp", "<=", end_of_day)
+        # query = query.where(field_path="TimeStamp", op_string=">=", value=start_of_day)
+        # query = query.where(field_path="TimeStamp", op_string="<=", value=end_of_day)
         # query = query.order_by('TimeStamp', direction=firestore.Query.DESCENDING)
         # query = query.limit(1)
         # day_entries = query.get()
+
+        # Jika masih muncul peringatan, gunakan versi ini sebagai alternatif:
+        query = db.collection('DataBase1Jalur')
+        query = query.where("TimeStamp", ">=", start_of_day)
+        query = query.where("TimeStamp", "<=", end_of_day)
+        query = query.order_by('TimeStamp', direction=firestore.Query.DESCENDING)
+        query = query.limit(1)
+        day_entries = query.get()
 
         if len(day_entries) == 0:
             continue

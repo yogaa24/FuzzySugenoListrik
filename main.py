@@ -212,7 +212,7 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
     elif biaya < 7000:
         biayalistrik[1] = (biaya - 4000)/(7000 - 4000)
     else:
-        biayalistrik[0] = 1
+        biayalistrik[1] = 1  # Fix: Changed from biayalistrik[0] to biayalistrik[1]
     # end fuzzyfication
 
     print(waktu)
@@ -354,74 +354,66 @@ def formatRupiah(angka):
 
 db = firestore.client()
 
-# # make firetore beetwen date
-# enddate = enddate.replace(hour=23, minute=59, second=59)
-# # doc_ref = db.collection('DataBase3Jalur').where(
-# #     'TimeStamp', '>=', stardate).where('TimeStamp', '<=', enddate).get()
-
-# # powerTotal = []
-# # Arustotal = []
-# # energytotal = []
-# # arrayWaktu = []
-# # jumlahPerangkat = []
-# # for d in doc_ref:
-# #     docs = d.to_dict()
-# #     datetime_parse = docs['TimeStamp'].strftime("%Y-%m-%d")
-# #     if datetime_parse in arrayWaktu:
-# #         index = arrayWaktu.index(datetime_parse)
-# #         if 'powerUtama' in docs:
-# #             powerTotal[index] += docs['powerUtama']
-# #         if 'Arustotal' in docs:
-# #             Arustotal[index] += docs['Arustotal']
-# #         if 'energytotal' in docs:
-# #             energytotal[index] += docs['energytotal']
-# #     else:
-# #         powerTotal.append(docs['powerUtama'])
-# #         Arustotal.append(docs['Arustotal'])
-# #         energytotal.append(docs['energytotal'])
-# #         arrayWaktu.append(datetime_parse)
-# #         if 'JumlahPerangkat' in docs:
-# #             jumlahPerangkat.append(docs['JumlahPerangkat'])
-
-
 def getData(arrayWaktu, daya):
     dataFuzy = []
     resultTable = []
     energyTotal = 0
     hargaTotal = 0
-    if len(arrayWaktu) < 0:
+    
+    # Fix: Changed the condition to check for empty array
+    if len(arrayWaktu) <= 0:
         return response(400, "Bad Request", data=None)
 
     for i in range(len(arrayWaktu)):
         dt = datetime.strptime(arrayWaktu[i], "%Y-%m-%d")
-        dts = datetime.replace(dt, hour=23, minute=58,
-                               second=59, microsecond=0)
-        dtTwo = datetime.replace(dt, hour=23, minute=59, second=59)
-        print(dts, dtTwo)
-        getLastestDataFromFirestore = db.collection('DataBase1Jalur').where(
-            'TimeStamp', ">=", dts).limit(1).get()
+        
+        # Get start and end of day for better query range
+        dt_start = datetime.replace(dt, hour=0, minute=0, second=0, microsecond=0)
+        dt_end = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
+        
+        print(f"Querying data between {dt_start} and {dt_end}")
+        
+        # Get all data for the day and sort by timestamp descending (newest first)
+        getDataFromFirestore = db.collection('DataBase1Jalur').where(
+            'TimeStamp', ">=", dt_start).where(
+            'TimeStamp', "<=", dt_end).order_by(
+            'TimeStamp', direction=firestore.Query.DESCENDING).limit(1).get()
 
-        if len(getLastestDataFromFirestore) == 0:
+        if len(getDataFromFirestore) == 0:
+            print(f"No data found for {arrayWaktu[i]}")
             continue
 
-        print(getLastestDataFromFirestore[0].to_dict())
-        dataTerakhir = getLastestDataFromFirestore[0].to_dict()
+        # Fix: Use index 0 directly since we're only getting one document
+        dataTerakhir = getDataFromFirestore[0].to_dict()
+        print(f"Data retrieved for {arrayWaktu[i]}:", dataTerakhir)
+        
         timeElapse = dataTerakhir['TimeStamp'].replace(
             tzinfo=None) - dt.replace(tzinfo=None)
         stopwatch = round(timeElapse.total_seconds() / 3600)
+        
+        # Fix: Changed to check for 'energy' and 'Energy' (case sensitivity)
         if 'energy' in dataTerakhir:
             energyTerakhir = dataTerakhir['energy']
-        elif 'Energy' in dataTerakhir:  # Huruf kapital berbeda
+            print(f"Energy value found (lowercase): {energyTerakhir}")
+        elif 'Energy' in dataTerakhir:
             energyTerakhir = dataTerakhir['Energy']
+            print(f"Energy value found (capitalized): {energyTerakhir}")
         else:
             energyTerakhir = 0.00
+            print("No energy value found in data")
+            
         dataPerangkat = 0
         if 'JumlahPerangkat' in dataTerakhir:
             dataPerangkat = dataTerakhir['JumlahPerangkat']
+            
+        # Use actual number of devices instead of hardcoded value
+        actualJumlahPerangkat = dataTerakhir['JumlahPerangkat'] if 'JumlahPerangkat' in dataTerakhir else 1
+        
         dataFuzy.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
-            "dataFuzy": fuzzyLogic(energyTerakhir, 3, daya, stopwatch, dataTerakhir['HargaListrik']),
+            "dataFuzy": fuzzyLogic(energyTerakhir, actualJumlahPerangkat, daya, stopwatch, dataTerakhir['HargaListrik']),
         })
+        
         resultTable.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
             "power": dataPerangkat,
@@ -430,9 +422,12 @@ def getData(arrayWaktu, daya):
             "stopwatch": stopwatch,
             "jumlah": dataTerakhir['JumlahPerangkat'] if 'JumlahPerangkat' in dataTerakhir else 0
         })
+        
         energyTotal += energyTerakhir
         hargaTotal += biaya(daya, energyTerakhir)
 
+    print(f"Total energy: {energyTotal}, Total harga: {hargaTotal}")
+    
     return {
         "dataFuzy": dataFuzy,
         "resultTable": resultTable,

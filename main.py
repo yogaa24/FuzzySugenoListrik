@@ -399,45 +399,75 @@ def getData(arrayWaktu, daya):
         # Set end of day
         end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
         
-        # Get all entries for the day and sort by timestamp to find the last one
+        print(f"Querying for date: {arrayWaktu[i]}, start: {start_of_day}, end: {end_of_day}")
+        
+        # Get all entries for the day
         day_entries = db.collection('DataBase1Jalur').where(
             'TimeStamp', ">=", start_of_day).where(
-            'TimeStamp', "<=", end_of_day).order_by('TimeStamp', direction=firestore.Query.DESCENDING).limit(1).get()
-
-        if len(day_entries) == 0:
+            'TimeStamp', "<=", end_of_day).get()
+        
+        if not day_entries:
+            print(f"No data found for {arrayWaktu[i]}")
             continue
-
-        print(f"Last entry for {arrayWaktu[i]}:", day_entries[0].to_dict())
-        dataTerakhir = day_entries[0].to_dict()
+            
+        # Find the latest entry manually
+        latest_entry = None
+        latest_time = None
+        
+        for doc in day_entries:
+            data = doc.to_dict()
+            # Print each document to debug
+            print(f"Document ID: {doc.id}, TimeStamp: {data.get('TimeStamp')}, energy: {data.get('energy')}")
+            
+            if 'TimeStamp' in data:
+                if latest_time is None or data['TimeStamp'] > latest_time:
+                    latest_time = data['TimeStamp']
+                    latest_entry = data
+        
+        if not latest_entry:
+            print(f"No valid entries found for {arrayWaktu[i]}")
+            continue
+            
+        print(f"Latest entry for {arrayWaktu[i]}: {latest_entry}")
+        dataTerakhir = latest_entry
         
         # Calculate time elapsed from start of day to the last entry
         timeElapse = dataTerakhir['TimeStamp'].replace(
             tzinfo=None) - start_of_day.replace(tzinfo=None)
         stopwatch = round(timeElapse.total_seconds() / 3600)
         
+        # Check for energy field
+        energyTerakhir = 0.00
         if 'energy' in dataTerakhir:
             energyTerakhir = dataTerakhir['energy']
         elif 'Energy' in dataTerakhir:
             energyTerakhir = dataTerakhir['Energy']
-        else:
-            energyTerakhir = 0.00
             
         dataPerangkat = 0
         if 'JumlahPerangkat' in dataTerakhir:
             dataPerangkat = dataTerakhir['JumlahPerangkat']
+        
+        # Make sure HargaListrik exists
+        harga_listrik = 977  # Default value
+        if 'HargaListrik' in dataTerakhir:
+            harga_listrik = dataTerakhir['HargaListrik']
+        elif 'Hargalistrik' in dataTerakhir:
+            harga_listrik = dataTerakhir['Hargalistrik']
+        elif 'hargalistrik' in dataTerakhir:
+            harga_listrik = dataTerakhir['hargalistrik']
             
         dataFuzy.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
-            "dataFuzy": fuzzyLogic(energyTerakhir, 3, daya, stopwatch, dataTerakhir['HargaListrik']),
+            "dataFuzy": fuzzyLogic(energyTerakhir, dataPerangkat or 3, daya, stopwatch, harga_listrik),
         })
         
         resultTable.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
-            "power": dataPerangkat,
+            "power": dataPerangkat if dataPerangkat > 0 else (dataTerakhir.get('power', 0)),
             "energy": energyTerakhir,
             "biaya": "Rp. "+formatRupiah(round(biaya(daya, energyTerakhir))),
             "stopwatch": stopwatch,
-            "jumlah": dataTerakhir['JumlahPerangkat'] if 'JumlahPerangkat' in dataTerakhir else 0
+            "jumlah": dataTerakhir.get('JumlahPerangkat', 0)
         })
         
         energyTotal += energyTerakhir

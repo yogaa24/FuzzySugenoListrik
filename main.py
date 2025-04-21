@@ -3,6 +3,7 @@ import json
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+from google.cloud.firestore import FieldFilter
 import time
 from datetime import datetime
 from flask_cors import CORS
@@ -400,9 +401,14 @@ def getData(arrayWaktu, daya):
         end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
         
         # Get all entries for the day and sort by timestamp to find the last one
-        day_entries = db.collection('DataBase1Jalur').where(
-            'TimeStamp', ">=", start_of_day).where(
-            'TimeStamp', "<=", end_of_day).order_by('TimeStamp', direction=firestore.Query.DESCENDING).limit(1).get()
+        # Menggunakan filter() dengan keyword argument daripada where()
+        # Contoh alternatif dengan FieldFilter
+        day_entries = db.collection('DataBase1Jalur') \
+            .filter(FieldFilter("TimeStamp", ">=", start_of_day)) \
+            .filter(FieldFilter("TimeStamp", "<=", end_of_day)) \
+            .order_by('TimeStamp', direction=firestore.Query.DESCENDING) \
+            .limit(1) \
+            .get()
 
         if len(day_entries) == 0:
             continue
@@ -449,7 +455,6 @@ def getData(arrayWaktu, daya):
         "energyTotal": round(energyTotal, 3),
         "hargaTotal": "Rp. "+formatRupiah(round(hargaTotal))
     }
-
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})

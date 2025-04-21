@@ -401,10 +401,10 @@ def getData(arrayWaktu, daya):
         
         # Get all entries for the day and sort by timestamp to find the last one
         day_entries = db.collection('DataBase1Jalur')\
-            .where('TimeStamp', '>=', start_of_day)\
-            .where('TimeStamp', '<=', end_of_day)\
-            .order_by('TimeStamp', direction=firestore.Query.DESCENDING)\
-            .limit(1).get()
+        .filter('TimeStamp', '>=', start_of_day)\
+        .filter('TimeStamp', '<=', end_of_day)\
+        .order_by('TimeStamp', direction=firestore.Query.DESCENDING)\
+        .limit(1).get()
 
 
         if len(day_entries) == 0:

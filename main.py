@@ -373,124 +373,115 @@ def getData(arrayWaktu, daya):
 
     for i in range(len(arrayWaktu)):
         dt = datetime.strptime(arrayWaktu[i], "%Y-%m-%d")
-        # Format date for debugging
-        date_str = dt.strftime("%Y-%m-%d")
-        print(f"Processing date: {date_str}")
-        
-        # Set start of day and end of day in UTC+7
+        # Set start of day
         start_of_day = datetime.replace(dt, hour=0, minute=0, second=0, microsecond=0)
+        # Set end of day
         end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
         
-        # Direct approach - try to get the document we know exists for April 20
-        if date_str == "2025-04-20":
-            print("Directly fetching the known document for April 20")
-            try:
-                # Try to fetch the specific document we saw in the screenshot
-                doc_ref = db.collection('DataBase1Jalur').document('dwMbo5OoTclJHHhwR').get()
-                if doc_ref.exists:
-                    latest_entry = doc_ref.to_dict()
-                    print(f"Successfully fetched document: {latest_entry}")
-                else:
-                    print("Document doesn't exist")
-                    # Fall back to query
-                    day_entries = list(db.collection('DataBase1Jalur').where(
-                        'TimeStamp', ">=", start_of_day).where(
-                        'TimeStamp', "<=", end_of_day).stream())
-                    
-                    if not day_entries:
-                        print(f"No data found for {date_str}")
-                        continue
-                    
-                    # Find the latest entry
-                    latest_entry = None
-                    latest_time = None
-                    for doc in day_entries:
-                        data = doc.to_dict()
-                        print(f"Document ID: {doc.id}, TimeStamp: {data.get('TimeStamp', 'No timestamp')}, energy: {data.get('energy', 'No energy')}")
-                        if 'TimeStamp' in data:
-                            if latest_time is None or data['TimeStamp'] > latest_time:
-                                latest_time = data['TimeStamp']
-                                latest_entry = data
-                    
-                    if not latest_entry:
-                        print(f"No valid entries found for {date_str}")
-                        continue
-            except Exception as e:
-                print(f"Error fetching document: {e}")
-                continue
-        else:
-            # Standard query for other dates
-            day_entries = list(db.collection('DataBase1Jalur').where(
-                'TimeStamp', ">=", start_of_day).where(
-                'TimeStamp', "<=", end_of_day).stream())
+        print(f"Mengambil data untuk tanggal: {arrayWaktu[i]}")
+        print(f"Start of day: {start_of_day}, End of day: {end_of_day}")
+        
+        # Gunakan try-except untuk menangkap error dalam query
+        try:
+            # Dapatkan semua entri untuk hari tersebut dan urutkan berdasarkan TimeStamp secara menurun
+            day_entries = (
+                db.collection("DataBase1Jalur")
+                .where(filter=FieldFilter("TimeStamp", ">=", start_of_day))
+                .where(filter=FieldFilter("TimeStamp", "<=", end_of_day))
+                .order_by("TimeStamp", direction=firestore.Query.DESCENDING)
+                .get()
+            )
             
-            if not day_entries:
-                print(f"No data found for {date_str}")
-                continue
+            print(f"Jumlah entri ditemukan: {len(day_entries)}")
             
-            # Find the latest entry
-            latest_entry = None
-            latest_time = None
-            for doc in day_entries:
-                data = doc.to_dict()
-                print(f"Document ID: {doc.id}, TimeStamp: {data.get('TimeStamp', 'No timestamp')}, energy: {data.get('energy', 'No energy')}")
-                if 'TimeStamp' in data:
-                    if latest_time is None or data['TimeStamp'] > latest_time:
-                        latest_time = data['TimeStamp']
-                        latest_entry = data
-            
-            if not latest_entry:
-                print(f"No valid entries found for {date_str}")
-                continue
+            # Jika tidak ada data untuk hari tersebut
+            if len(day_entries) == 0:
+                print(f"Tidak ada data untuk tanggal {arrayWaktu[i]}")
+                # Gunakan nilai default
+                dataFuzy.append({
+                    "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
+                    "dataFuzy": {
+                        "fuzy": 0.0,
+                        "text": "Penggunaan Rendah"
+                    },
+                })
                 
-        print(f"Using data for {date_str}: {latest_entry}")
-        dataTerakhir = latest_entry
-        
-        # Calculate time elapsed from start of day to the last entry
-        timeElapse = dataTerakhir['TimeStamp'].replace(
-            tzinfo=None) - start_of_day.replace(tzinfo=None)
-        stopwatch = round(timeElapse.total_seconds() / 3600)
-        
-        # Check for energy field with explicit debugging
-        energyTerakhir = 0.00
-        if 'energy' in dataTerakhir:
-            energyTerakhir = dataTerakhir['energy']
-            print(f"Found energy field: {energyTerakhir}")
-        elif 'Energy' in dataTerakhir:
-            energyTerakhir = dataTerakhir['Energy']
-            print(f"Found Energy field: {energyTerakhir}")
-        else:
-            print("No energy field found in document")
+                resultTable.append({
+                    "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
+                    "power": 0.0,
+                    "energy": 0.0,
+                    "biaya": "Rp. 0",
+                    "stopwatch": 0,
+                    "jumlah": 0
+                })
+                continue
             
-        dataPerangkat = 0
-        if 'JumlahPerangkat' in dataTerakhir:
-            dataPerangkat = dataTerakhir['JumlahPerangkat']
-        
-        # Make sure HargaListrik exists
-        harga_listrik = 977  # Default value
-        if 'HargaListrik' in dataTerakhir:
-            harga_listrik = dataTerakhir['HargaListrik']
-        elif 'Hargalistrik' in dataTerakhir:
-            harga_listrik = dataTerakhir['Hargalistrik']
-        elif 'hargalistrik' in dataTerakhir:
-            harga_listrik = dataTerakhir['hargalistrik']
+            # Ambil data terakhir berdasarkan TimeStamp (entri pertama setelah diurutkan DESCENDING)
+            dataTerakhir = day_entries[0].to_dict()
+            print(f"Data terakhir untuk {arrayWaktu[i]}:", dataTerakhir)
             
-        dataFuzy.append({
-            "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
-            "dataFuzy": fuzzyLogic(energyTerakhir, dataPerangkat or 3, daya, stopwatch, harga_listrik),
-        })
-        
-        resultTable.append({
-            "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
-            "power": dataPerangkat if dataPerangkat > 0 else (dataTerakhir.get('power', 0)),
-            "energy": energyTerakhir,
-            "biaya": "Rp. "+formatRupiah(round(biaya(daya, energyTerakhir))),
-            "stopwatch": stopwatch,
-            "jumlah": dataTerakhir.get('JumlahPerangkat', 0)
-        })
-        
-        energyTotal += energyTerakhir
-        hargaTotal += biaya(daya, energyTerakhir)
+            # Periksa dan ambil nilai energy dari data
+            energyTerakhir = 0.0
+            if 'energy' in dataTerakhir:
+                energyTerakhir = float(dataTerakhir['energy'])
+            elif 'Energy' in dataTerakhir:
+                energyTerakhir = float(dataTerakhir['Energy'])
+                
+            print(f"Energy terakhir: {energyTerakhir}")
+            
+            # Calculate time elapsed from start of day to the last entry
+            timeElapse = dataTerakhir['TimeStamp'].replace(
+                tzinfo=None) - start_of_day.replace(tzinfo=None)
+            stopwatch = round(timeElapse.total_seconds() / 3600)
+            
+            # Periksa apakah jumlah perangkat ada dalam data
+            dataPerangkat = 0
+            if 'JumlahPerangkat' in dataTerakhir:
+                dataPerangkat = dataTerakhir['JumlahPerangkat']
+            
+            # Periksa apakah HargaListrik ada dalam data
+            hargaListrik = 0
+            if 'HargaListrik' in dataTerakhir:
+                hargaListrik = dataTerakhir['HargaListrik']
+            
+            # Hitung fuzzy dan tambahkan ke hasil
+            fuzzyResult = fuzzyLogic(energyTerakhir, 3, daya, stopwatch, hargaListrik)
+            dataFuzy.append({
+                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
+                "dataFuzy": fuzzyResult,
+            })
+            
+            resultTable.append({
+                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
+                "power": dataPerangkat,
+                "energy": energyTerakhir,
+                "biaya": "Rp. "+formatRupiah(round(biaya(daya, energyTerakhir))),
+                "stopwatch": stopwatch,
+                "jumlah": dataTerakhir.get('JumlahPerangkat', 0)
+            })
+            
+            energyTotal += energyTerakhir
+            hargaTotal += biaya(daya, energyTerakhir)
+            
+        except Exception as e:
+            print(f"Error saat mengambil data untuk tanggal {arrayWaktu[i]}: {str(e)}")
+            # Tambahkan data default jika terjadi error
+            dataFuzy.append({
+                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
+                "dataFuzy": {
+                    "fuzy": 0.0,
+                    "text": "Penggunaan Rendah"
+                },
+            })
+            
+            resultTable.append({
+                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
+                "power": 0.0,
+                "energy": 0.0,
+                "biaya": "Rp. 0",
+                "stopwatch": 0,
+                "jumlah": 0
+            })
 
     return {
         "dataFuzy": dataFuzy,

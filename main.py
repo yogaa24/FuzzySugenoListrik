@@ -368,120 +368,50 @@ def getData(arrayWaktu, daya):
     resultTable = []
     energyTotal = 0
     hargaTotal = 0
-    if len(arrayWaktu) <= 0:
+    if len(arrayWaktu) < 0:
         return response(400, "Bad Request", data=None)
 
     for i in range(len(arrayWaktu)):
         dt = datetime.strptime(arrayWaktu[i], "%Y-%m-%d")
-        # Set start of day
-        start_of_day = datetime.replace(dt, hour=0, minute=0, second=0, microsecond=0)
-        # Set end of day
-        end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
-        
-        print(f"Mengambil data untuk tanggal: {arrayWaktu[i]}")
-        print(f"Start of day: {start_of_day}, End of day: {end_of_day}")
-        
-        # Gunakan try-except untuk menangkap error dalam query
-        try:
-            # Dapatkan semua entri untuk hari tersebut dan urutkan berdasarkan TimeStamp secara menurun
-            day_entries = (
-                db.collection("DataBase1Jalur")
-                .where(filter=FieldFilter("TimeStamp", ">=", start_of_day))
-                .where(filter=FieldFilter("TimeStamp", "<=", end_of_day))
-                .order_by("TimeStamp", direction=firestore.Query.DESCENDING)
-                .get()
-            )
-            
-            print(f"Jumlah entri ditemukan: {len(day_entries)}")
-            
-            # Jika tidak ada data untuk hari tersebut
-            if len(day_entries) == 0:
-                print(f"Tidak ada data untuk tanggal {arrayWaktu[i]}")
-                # Gunakan nilai default
-                dataFuzy.append({
-                    "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
-                    "dataFuzy": {
-                        "fuzy": 0.0,
-                        "text": "Penggunaan Rendah"
-                    },
-                })
-                
-                resultTable.append({
-                    "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
-                    "power": 0.0,
-                    "energy": 0.0,
-                    "biaya": "Rp. 0",
-                    "stopwatch": 0,
-                    "jumlah": 0
-                })
-                continue
-            
-            # Ambil data terakhir berdasarkan TimeStamp (entri pertama setelah diurutkan DESCENDING)
-            dataTerakhir = day_entries[0].to_dict()
-            print(f"Data terakhir untuk {arrayWaktu[i]}:", dataTerakhir)
-            
-            # Periksa dan ambil nilai energy dari data
-            energyTerakhir = 0.0
-            if 'energy' in dataTerakhir:
-                energyTerakhir = float(dataTerakhir['energy'])
-            elif 'Energy' in dataTerakhir:
-                energyTerakhir = float(dataTerakhir['Energy'])
-                
-            print(f"Energy terakhir: {energyTerakhir}")
-            
-            # Calculate time elapsed from start of day to the last entry
-            timeElapse = dataTerakhir['TimeStamp'].replace(
-                tzinfo=None) - start_of_day.replace(tzinfo=None)
-            stopwatch = round(timeElapse.total_seconds() / 3600)
-            
-            # Periksa apakah jumlah perangkat ada dalam data
-            dataPerangkat = 0
-            if 'JumlahPerangkat' in dataTerakhir:
-                dataPerangkat = dataTerakhir['JumlahPerangkat']
-            
-            # Periksa apakah HargaListrik ada dalam data
-            hargaListrik = 0
-            if 'HargaListrik' in dataTerakhir:
-                hargaListrik = dataTerakhir['HargaListrik']
-            
-            # Hitung fuzzy dan tambahkan ke hasil
-            fuzzyResult = fuzzyLogic(energyTerakhir, 3, daya, stopwatch, hargaListrik)
-            dataFuzy.append({
-                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
-                "dataFuzy": fuzzyResult,
-            })
-            
-            resultTable.append({
-                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
-                "power": dataPerangkat,
-                "energy": energyTerakhir,
-                "biaya": "Rp. "+formatRupiah(round(biaya(daya, energyTerakhir))),
-                "stopwatch": stopwatch,
-                "jumlah": dataTerakhir.get('JumlahPerangkat', 0)
-            })
-            
-            energyTotal += energyTerakhir
-            hargaTotal += biaya(daya, energyTerakhir)
-            
-        except Exception as e:
-            print(f"Error saat mengambil data untuk tanggal {arrayWaktu[i]}: {str(e)}")
-            # Tambahkan data default jika terjadi error
-            dataFuzy.append({
-                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
-                "dataFuzy": {
-                    "fuzy": 0.0,
-                    "text": "Penggunaan Rendah"
-                },
-            })
-            
-            resultTable.append({
-                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
-                "power": 0.0,
-                "energy": 0.0,
-                "biaya": "Rp. 0",
-                "stopwatch": 0,
-                "jumlah": 0
-            })
+        dts = datetime.replace(dt, hour=23, minute=58,
+                               second=59, microsecond=0)
+        dtTwo = datetime.replace(dt, hour=23, minute=59, second=59)
+        print(dts, dtTwo)
+        getLastestDataFromFirestore = db.collection('DataBase1Jalur').where(
+            'TimeStamp', ">=", dts).limit(1).get()
+
+        if len(getLastestDataFromFirestore) == 0:
+            continue
+
+        print(getLastestDataFromFirestore[0].to_dict())
+        dataTerakhir = getLastestDataFromFirestore[len(
+            getLastestDataFromFirestore) - 1].to_dict()
+        timeElapse = dataTerakhir['TimeStamp'].replace(
+            tzinfo=None) - dt.replace(tzinfo=None)
+        stopwatch = round(timeElapse.total_seconds() / 3600)
+        if 'energy' in dataTerakhir:
+            energyTerakhir = dataTerakhir['energy']
+        elif 'Energy' in dataTerakhir:
+            energyTerakhir = dataTerakhir['Energy']
+        else:
+            energyTerakhir = 0.00
+        dataPerangkat = 0
+        if 'JumlahPerangkat' in dataTerakhir:
+            dataPerangkat = dataTerakhir['JumlahPerangkat']
+        dataFuzy.append({
+            "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
+            "dataFuzy": fuzzyLogic(energyTerakhir, 3, daya, stopwatch, dataTerakhir['HargaListrik']),
+        })
+        resultTable.append({
+            "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
+            "power": dataPerangkat,
+            "energy": energyTerakhir,
+            "biaya": "Rp. "+formatRupiah(round(biaya(daya, energyTerakhir))),
+            "stopwatch": stopwatch,
+            "jumlah": dataTerakhir['JumlahPerangkat'] if 'JumlahPerangkat' in dataTerakhir else 0
+        })
+        energyTotal += energyTerakhir
+        hargaTotal += biaya(daya, energyTerakhir)
 
     return {
         "dataFuzy": dataFuzy,

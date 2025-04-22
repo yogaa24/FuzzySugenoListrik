@@ -378,7 +378,9 @@ def getData(arrayWaktu, daya):
         # Set end of day
         end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
         
-        # Use the new filter syntax instead of positional where arguments
+        print(f"Querying date range: {start_of_day} to {end_of_day}")
+        
+        # Tambahkan log untuk melihat range query
         day_entries = (
             db.collection("DataBase1Jalur")
             .where(filter=FieldFilter("TimeStamp", ">=", start_of_day))
@@ -388,12 +390,16 @@ def getData(arrayWaktu, daya):
             .get()
         )
 
+        # Print jumlah dokumen yang ditemukan
+        print(f"Found {len(day_entries)} documents for {arrayWaktu[i]}")
 
         if len(day_entries) == 0:
+            print(f"No data found for {arrayWaktu[i]}")
             continue
 
-        print(f"Last entry for {arrayWaktu[i]}:", day_entries[0].to_dict())
+        # Cetak semua data untuk debugging
         dataTerakhir = day_entries[0].to_dict()
+        print(f"Data for {arrayWaktu[i]}:", dataTerakhir)
         
         # Calculate time elapsed from start of day to the last entry
         timeElapse = dataTerakhir['TimeStamp'].replace(

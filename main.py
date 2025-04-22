@@ -362,35 +362,6 @@ def formatRupiah(angka):
 # Inisialisasi client Firestore
 db = firestore.Client()
 
-# # make firetore beetwen date
-# enddate = enddate.replace(hour=23, minute=59, second=59)
-# # doc_ref = db.collection('DataBase3Jalur').where(
-# #     'TimeStamp', '>=', stardate).where('TimeStamp', '<=', enddate).get()
-
-# # powerTotal = []
-# # Arustotal = []
-# # energytotal = []
-# # arrayWaktu = []
-# # jumlahPerangkat = []
-# # for d in doc_ref:
-# #     docs = d.to_dict()
-# #     datetime_parse = docs['TimeStamp'].strftime("%Y-%m-%d")
-# #     if datetime_parse in arrayWaktu:
-# #         index = arrayWaktu.index(datetime_parse)
-# #         if 'powerUtama' in docs:
-# #             powerTotal[index] += docs['powerUtama']
-# #         if 'Arustotal' in docs:
-# #             Arustotal[index] += docs['Arustotal']
-# #         if 'energytotal' in docs:
-# #             energytotal[index] += docs['energytotal']
-# #     else:
-# #         powerTotal.append(docs['powerUtama'])
-# #         Arustotal.append(docs['Arustotal'])
-# #         energytotal.append(docs['energytotal'])
-# #         arrayWaktu.append(datetime_parse)
-# #         if 'JumlahPerangkat' in docs:
-# #             jumlahPerangkat.append(docs['JumlahPerangkat'])
-
 
 def getData(arrayWaktu, daya):
     dataFuzy = []
@@ -402,12 +373,14 @@ def getData(arrayWaktu, daya):
 
     for i in range(len(arrayWaktu)):
         dt = datetime.strptime(arrayWaktu[i], "%Y-%m-%d")
-        # Set start of day
+        # Set start of day (in local time)
         start_of_day = datetime.replace(dt, hour=0, minute=0, second=0, microsecond=0)
-        # Set end of day
+        # Set end of day (in local time)
         end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
         
-        # Use the new filter syntax instead of positional where arguments
+        print(f"Querying for date: {arrayWaktu[i]}, start: {start_of_day}, end: {end_of_day}")
+        
+        # Use the FieldFilter for TimeStamp queries
         day_entries = (
             db.collection("DataBase1Jalur")
             .where(filter=FieldFilter("TimeStamp", ">=", start_of_day))
@@ -417,41 +390,61 @@ def getData(arrayWaktu, daya):
             .get()
         )
 
-
         if len(day_entries) == 0:
+            print(f"No entries found for date: {arrayWaktu[i]}")
+            # Add default values if no data found for this date
+            dataFuzy.append({
+                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
+                "dataFuzy": {
+                    "fuzy": 0.0,
+                    "text": "Penggunaan Rendah"
+                }
+            })
+            
+            resultTable.append({
+                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
+                "power": 0.0,
+                "energy": 0.0,
+                "biaya": "Rp. 0",
+                "stopwatch": 0,
+                "jumlah": 0
+            })
             continue
 
-        print(f"Last entry for {arrayWaktu[i]}:", day_entries[0].to_dict())
+        print(f"Found {len(day_entries)} entries for {arrayWaktu[i]}")
         dataTerakhir = day_entries[0].to_dict()
+        print(f"Last document data: {dataTerakhir}")
         
         # Calculate time elapsed from start of day to the last entry
         timeElapse = dataTerakhir['TimeStamp'].replace(
             tzinfo=None) - start_of_day.replace(tzinfo=None)
         stopwatch = round(timeElapse.total_seconds() / 3600)
         
-        if 'energy' in dataTerakhir:
-            energyTerakhir = dataTerakhir['energy']
-        elif 'Energy' in dataTerakhir:
-            energyTerakhir = dataTerakhir['Energy']
-        else:
-            energyTerakhir = 0.00
+        # Get energy value with proper field name
+        energyTerakhir = dataTerakhir.get('energy', 0.0)
+        print(f"Energy value: {energyTerakhir}")
             
-        dataPerangkat = 0
-        if 'JumlahPerangkat' in dataTerakhir:
-            dataPerangkat = dataTerakhir['JumlahPerangkat']
+        # Get jumlah perangkat
+        dataPerangkat = dataTerakhir.get('JumlahPerangkat', 0)
+        
+        # Get or calculate harga listrik
+        harga_listrik = dataTerakhir.get('HargaListrik', 0)
+        if harga_listrik == 0:
+            # Use the field name from your screenshot
+            harga_listrik = dataTerakhir.get('HargaListrik', dataTerakhir.get('HargaListrik', 1352))
             
         dataFuzy.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
-            "dataFuzy": fuzzyLogic(energyTerakhir, 3, daya, stopwatch, dataTerakhir['HargaListrik']),
+            "dataFuzy": fuzzyLogic(energyTerakhir, dataPerangkat or 1, daya, stopwatch, harga_listrik),
         })
         
         resultTable.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
-            "power": dataPerangkat,
+            "power": dataTerakhir.get('power', 0),
             "energy": energyTerakhir,
             "biaya": "Rp. "+formatRupiah(round(biaya(daya, energyTerakhir))),
             "stopwatch": stopwatch,
-            "jumlah": dataTerakhir['JumlahPerangkat'] if 'JumlahPerangkat' in dataTerakhir else 0
+            "jumlah": dataPerangkat
         })
         
         energyTotal += energyTerakhir

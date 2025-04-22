@@ -373,14 +373,14 @@ def getData(arrayWaktu, daya):
 
     for i in range(len(arrayWaktu)):
         dt = datetime.strptime(arrayWaktu[i], "%Y-%m-%d")
-        # Set start of day (in local time)
+        # Set start of day
         start_of_day = datetime.replace(dt, hour=0, minute=0, second=0, microsecond=0)
-        # Set end of day (in local time)
+        # Set end of day
         end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
         
         print(f"Querying for date: {arrayWaktu[i]}, start: {start_of_day}, end: {end_of_day}")
         
-        # Use the FieldFilter for TimeStamp queries
+        # Query the last entry for the day
         day_entries = (
             db.collection("DataBase1Jalur")
             .where(filter=FieldFilter("TimeStamp", ">=", start_of_day))
@@ -391,56 +391,45 @@ def getData(arrayWaktu, daya):
         )
 
         if len(day_entries) == 0:
-            print(f"No entries found for date: {arrayWaktu[i]}")
-            # Add default values if no data found for this date
-            dataFuzy.append({
-                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
-                "dataFuzy": {
-                    "fuzy": 0.0,
-                    "text": "Penggunaan Rendah"
-                }
-            })
-            
-            resultTable.append({
-                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
-                "power": 0.0,
-                "energy": 0.0,
-                "biaya": "Rp. 0",
-                "stopwatch": 0,
-                "jumlah": 0
-            })
+            print(f"No data found for date: {arrayWaktu[i]}")
             continue
 
-        print(f"Found {len(day_entries)} entries for {arrayWaktu[i]}")
         dataTerakhir = day_entries[0].to_dict()
-        print(f"Last document data: {dataTerakhir}")
+        print(f"Last entry for {arrayWaktu[i]}:", dataTerakhir)
         
         # Calculate time elapsed from start of day to the last entry
         timeElapse = dataTerakhir['TimeStamp'].replace(
             tzinfo=None) - start_of_day.replace(tzinfo=None)
         stopwatch = round(timeElapse.total_seconds() / 3600)
         
-        # Get energy value with proper field name
-        energyTerakhir = dataTerakhir.get('energy', 0.0)
-        print(f"Energy value: {energyTerakhir}")
-            
-        # Get jumlah perangkat
-        dataPerangkat = dataTerakhir.get('JumlahPerangkat', 0)
+        # Handle energy field with case insensitivity
+        energyTerakhir = 0.00
+        if 'energy' in dataTerakhir:
+            energyTerakhir = dataTerakhir['energy']
+        elif 'Energy' in dataTerakhir:
+            energyTerakhir = dataTerakhir['Energy']
         
-        # Get or calculate harga listrik
-        harga_listrik = dataTerakhir.get('HargaListrik', 0)
-        if harga_listrik == 0:
-            # Use the field name from your screenshot
-            harga_listrik = dataTerakhir.get('HargaListrik', dataTerakhir.get('HargaListrik', 1352))
-            
+        # Handle device count
+        dataPerangkat = 0
+        if 'JumlahPerangkat' in dataTerakhir:
+            dataPerangkat = dataTerakhir['JumlahPerangkat']
+        
+        # Make sure HargaListrik exists
+        hargaListrik = 0
+        if 'HargaListrik' in dataTerakhir:
+            hargaListrik = dataTerakhir['HargaListrik']
+        
+        # Calculate fuzzy logic
+        fuzzyResult = fuzzyLogic(energyTerakhir, dataPerangkat or 3, daya, stopwatch, hargaListrik)
+        
         dataFuzy.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
-            "dataFuzy": fuzzyLogic(energyTerakhir, dataPerangkat or 1, daya, stopwatch, harga_listrik),
+            "dataFuzy": fuzzyResult,
         })
         
         resultTable.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
-            "power": dataTerakhir.get('power', 0),
+            "power": dataPerangkat,
             "energy": energyTerakhir,
             "biaya": "Rp. "+formatRupiah(round(biaya(daya, energyTerakhir))),
             "stopwatch": stopwatch,

@@ -371,151 +371,55 @@ def getData(arrayWaktu, daya):
     if len(arrayWaktu) <= 0:
         return response(400, "Bad Request", data=None)
 
-    # Inisialisasi client Firestore di luar loop jika belum ada
-    db = firestore.Client()
-
     for i in range(len(arrayWaktu)):
         dt = datetime.strptime(arrayWaktu[i], "%Y-%m-%d")
-        print(f"Processing date: {arrayWaktu[i]}")
+        # Set start of day
+        start_of_day = datetime.replace(dt, hour=0, minute=0, second=0, microsecond=0)
+        # Set end of day
+        end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
         
-        # Dapatkan semua data dari koleksi
-        all_docs = db.collection("DataBase1Jalur").get()
-        matching_docs = []
-        
-        # Filter dokumen secara manual berdasarkan tanggal
-        for doc in all_docs:
-            doc_data = doc.to_dict()
-            if 'TimeStamp' in doc_data:
-                # TimeStamp bisa dalam berbagai format, coba tangani keduanya
-                ts = doc_data['TimeStamp']
-                timestamp_date = None
-                
-                # Jika TimeStamp adalah string
-                if isinstance(ts, str):
-                    try:
-                        # Contoh format: "April 21, 2025 at 11:59:38 PM UTC+7"
-                        # Ekstrak tanggal dari string
-                        date_part = ts.split(" at ")[0]
-                        timestamp_date = datetime.strptime(date_part, "%B %d, %Y")
-                    except Exception as e:
-                        print(f"Error parsing string timestamp: {e}")
-                        continue
-                # Jika TimeStamp adalah objek datetime
-                elif hasattr(ts, 'year'):
-                    timestamp_date = ts
-                
-                # Jika berhasil mendapatkan tanggal, bandingkan dengan tanggal yang diminta
-                if timestamp_date and timestamp_date.date() == dt.date():
-                    matching_docs.append(doc)
-                    print(f"Found matching document for {arrayWaktu[i]}: {doc_data}")
-        
-        print(f"Total matching documents for {arrayWaktu[i]}: {len(matching_docs)}")
-        
-        # Jika tidak ada dokumen yang cocok
-        if len(matching_docs) == 0:
-            print(f"No data found for date {arrayWaktu[i]}")
-            dataFuzy.append({
-                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
-                "dataFuzy": {
-                    "fuzy": 0.0,
-                    "text": "Data Tidak Tersedia"
-                },
-            })
-            
-            resultTable.append({
-                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
-                "power": 0,
-                "energy": 0,
-                "biaya": "Rp. 0",
-                "stopwatch": 0,
-                "jumlah": 0
-            })
+        # Use the new filter syntax instead of positional where arguments
+        day_entries = (
+            db.collection("DataBase1Jalur")
+            .where(filter=FieldFilter("TimeStamp", ">=", start_of_day))
+            .where(filter=FieldFilter("TimeStamp", "<=", end_of_day))
+            .order_by("TimeStamp", direction=firestore.Query.DESCENDING)
+            .limit(1)
+            .get()
+        )
+
+
+        if len(day_entries) == 0:
             continue
+
+        print(f"Last entry for {arrayWaktu[i]}:", day_entries[0].to_dict())
+        dataTerakhir = day_entries[0].to_dict()
         
-        # Urutkan dokumen yang cocok berdasarkan waktu (ambil yang terbaru untuk tanggal yang diminta)
-        # Kita bisa mencoba menyortir secara manual berdasarkan waktu jika TimeStamp adalah string
-        latest_doc = None
-        latest_time = None
-        
-        for doc in matching_docs:
-            doc_data = doc.to_dict()
-            ts = doc_data['TimeStamp']
-            
-            # Jika TimeStamp adalah string
-            if isinstance(ts, str):
-                try:
-                    # Contoh format: "April 21, 2025 at 11:59:38 PM UTC+7"
-                    time_part = ts.split(" at ")[1].split(" UTC")[0]
-                    date_part = ts.split(" at ")[0]
-                    full_time_str = f"{date_part} {time_part}"
-                    # Coba beberapa format umum
-                    time_formats = [
-                        "%B %d, %Y %I:%M:%S %p",
-                        "%B %d, %Y %H:%M:%S"
-                    ]
-                    parsed_time = None
-                    for fmt in time_formats:
-                        try:
-                            parsed_time = datetime.strptime(full_time_str, fmt)
-                            break
-                        except:
-                            continue
-                    
-                    if parsed_time and (latest_time is None or parsed_time > latest_time):
-                        latest_time = parsed_time
-                        latest_doc = doc
-                except Exception as e:
-                    print(f"Error parsing time from timestamp: {e}")
-            # Jika TimeStamp adalah objek datetime
-            elif hasattr(ts, 'hour'):
-                if latest_time is None or ts > latest_time:
-                    latest_time = ts
-                    latest_doc = doc
-        
-        if latest_doc is None:
-            print(f"No valid timestamp found for {arrayWaktu[i]}")
-            continue
-            
-        # Gunakan dokumen terbaru untuk tanggal yang diminta
-        dataTerakhir = latest_doc.to_dict()
-        print(f"Latest document for {arrayWaktu[i]}: {dataTerakhir}")
-        
-        # Hitung stopwatch (waktu penggunaan dalam jam)
-        stopwatch = 0
-        if isinstance(dt, datetime):
-            # Asumsi penggunaan sepanjang hari jika tidak ada waktu spesifik
-            stopwatch = 24  # 24 jam
+        # Calculate time elapsed from start of day to the last entry
+        timestamp_raw = dataTerakhir['TimeStamp']
+        if hasattr(timestamp_raw, "to_datetime"):
+            timestamp = timestamp_raw.to_datetime()
         else:
-            # Jika ada informasi waktu yang lebih spesifik, bisa digunakan di sini
-            stopwatch = 24  # Default ke 24 jam
+            timestamp = timestamp_raw  # kalau sudah datetime
+
+        timeElapse = timestamp.replace(tzinfo=None) - start_of_day.replace(tzinfo=None)
+        stopwatch = round(timeElapse.total_seconds() / 3600)
+
         
-        # Ambil nilai energy dari dokumen
-        energyTerakhir = 0.0
         if 'energy' in dataTerakhir:
-            energyTerakhir = float(dataTerakhir['energy'])
+            energyTerakhir = dataTerakhir['energy']
         elif 'Energy' in dataTerakhir:
-            energyTerakhir = float(dataTerakhir['Energy'])
-        print(f"Energy value: {energyTerakhir}")
-        
-        # Ambil jumlah perangkat
+            energyTerakhir = dataTerakhir['Energy']
+        else:
+            energyTerakhir = 0.00
+            
         dataPerangkat = 0
         if 'JumlahPerangkat' in dataTerakhir:
-            dataPerangkat = float(dataTerakhir['JumlahPerangkat'])
-        print(f"Jumlah perangkat: {dataPerangkat}")
-        
-        # Ambil harga listrik
-        hargaListrik = 0
-        if 'HargaListrik' in dataTerakhir:
-            hargaListrik = float(dataTerakhir['HargaListrik'])
-        print(f"Harga listrik: {hargaListrik}")
-        
-        # Hitung fuzzy logic
-        resultFuzzy = fuzzyLogic(energyTerakhir, dataPerangkat or 1, daya, stopwatch, hargaListrik)
-        print(f"Fuzzy result: {resultFuzzy}")
-        
+            dataPerangkat = dataTerakhir['JumlahPerangkat']
+            
         dataFuzy.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
-            "dataFuzy": resultFuzzy,
+            "dataFuzy": fuzzyLogic(energyTerakhir, 3, daya, stopwatch, dataTerakhir['HargaListrik']),
         })
         
         resultTable.append({
@@ -524,7 +428,7 @@ def getData(arrayWaktu, daya):
             "energy": energyTerakhir,
             "biaya": "Rp. "+formatRupiah(round(biaya(daya, energyTerakhir))),
             "stopwatch": stopwatch,
-            "jumlah": dataPerangkat
+            "jumlah": dataTerakhir['JumlahPerangkat'] if 'JumlahPerangkat' in dataTerakhir else 0
         })
         
         energyTotal += energyTerakhir

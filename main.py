@@ -373,53 +373,84 @@ def getData(arrayWaktu, daya):
 
     for i in range(len(arrayWaktu)):
         dt = datetime.strptime(arrayWaktu[i], "%Y-%m-%d")
-        # Set start of day
-        start_of_day = datetime.replace(dt, hour=0, minute=0, second=0, microsecond=0)
-        # Set end of day
-        end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
+        # Set start of day - explicitly in UTC
+        start_of_day = datetime(dt.year, dt.month, dt.day, 0, 0, 0)
+        # Set end of day - explicitly in UTC
+        end_of_day = datetime(dt.year, dt.month, dt.day, 23, 59, 59, 999999)
         
-        print(f"Querying date range: {start_of_day} to {end_of_day}")
+        print(f"Querying for date {arrayWaktu[i]} from {start_of_day} to {end_of_day}")
         
-        # Tambahkan log untuk melihat range query
+        # Pastikan query menggunakan yang terbaru dari tanggal tersebut
         day_entries = (
             db.collection("DataBase1Jalur")
             .where(filter=FieldFilter("TimeStamp", ">=", start_of_day))
             .where(filter=FieldFilter("TimeStamp", "<=", end_of_day))
-            .order_by("TimeStamp", direction=firestore.Query.DESCENDING)
-            .limit(1)
+            .order_by("TimeStamp", direction=firestore.Query.DESCENDING)  # Ambil yang terbaru duluan
+            .limit(1)  # Hanya ambil 1 data terakhir
             .get()
         )
 
-        # Print jumlah dokumen yang ditemukan
-        print(f"Found {len(day_entries)} documents for {arrayWaktu[i]}")
+        print(f"Results found for {arrayWaktu[i]}: {len(day_entries)}")
 
         if len(day_entries) == 0:
-            print(f"No data found for {arrayWaktu[i]}")
+            print(f"No data found for date {arrayWaktu[i]}")
+            
+            # Tambahkan entri kosong jika tidak ada data
+            dataFuzy.append({
+                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
+                "dataFuzy": {
+                    "fuzy": 0.0,
+                    "text": "Data Tidak Tersedia"
+                },
+            })
+            
+            resultTable.append({
+                "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
+                "power": 0,
+                "energy": 0,
+                "biaya": "Rp. 0",
+                "stopwatch": 0,
+                "jumlah": 0
+            })
             continue
 
-        # Cetak semua data untuk debugging
+        # Print debug information
         dataTerakhir = day_entries[0].to_dict()
-        print(f"Data for {arrayWaktu[i]}:", dataTerakhir)
+        print(f"Data terakhir untuk {arrayWaktu[i]}:", dataTerakhir)
+        print(f"Timestamp type: {type(dataTerakhir['TimeStamp'])}")
+        print(f"Timestamp value: {dataTerakhir['TimeStamp']}")
         
-        # Calculate time elapsed from start of day to the last entry
-        timeElapse = dataTerakhir['TimeStamp'].replace(
-            tzinfo=None) - start_of_day.replace(tzinfo=None)
+        # Calculate time elapsed with proper timezone handling
+        timeElapse = dataTerakhir['TimeStamp'].replace(tzinfo=None) - start_of_day.replace(tzinfo=None)
         stopwatch = round(timeElapse.total_seconds() / 3600)
+        print(f"Calculated stopwatch: {stopwatch} hours")
         
+        # Handle different field names consistently
+        energyTerakhir = 0.0
         if 'energy' in dataTerakhir:
-            energyTerakhir = dataTerakhir['energy']
+            energyTerakhir = float(dataTerakhir['energy'])
         elif 'Energy' in dataTerakhir:
-            energyTerakhir = dataTerakhir['Energy']
-        else:
-            energyTerakhir = 0.00
+            energyTerakhir = float(dataTerakhir['Energy'])
+        print(f"Energy value: {energyTerakhir}")
             
         dataPerangkat = 0
         if 'JumlahPerangkat' in dataTerakhir:
-            dataPerangkat = dataTerakhir['JumlahPerangkat']
-            
+            dataPerangkat = float(dataTerakhir['JumlahPerangkat'])
+        print(f"Jumlah perangkat: {dataPerangkat}")
+        
+        # Ensure HargaListrik exists
+        hargaListrik = 0
+        if 'HargaListrik' in dataTerakhir:
+            hargaListrik = float(dataTerakhir['HargaListrik'])
+        print(f"Harga listrik: {hargaListrik}")
+        
+        # Calculate fuzzy logic
+        resultFuzzy = fuzzyLogic(energyTerakhir, dataPerangkat or 1, daya, stopwatch, hargaListrik)
+        print(f"Fuzzy result: {resultFuzzy}")
+        
         dataFuzy.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
-            "dataFuzy": fuzzyLogic(energyTerakhir, 3, daya, stopwatch, dataTerakhir['HargaListrik']),
+            "dataFuzy": resultFuzzy,
         })
         
         resultTable.append({
@@ -428,7 +459,7 @@ def getData(arrayWaktu, daya):
             "energy": energyTerakhir,
             "biaya": "Rp. "+formatRupiah(round(biaya(daya, energyTerakhir))),
             "stopwatch": stopwatch,
-            "jumlah": dataTerakhir['JumlahPerangkat'] if 'JumlahPerangkat' in dataTerakhir else 0
+            "jumlah": dataPerangkat
         })
         
         energyTotal += energyTerakhir

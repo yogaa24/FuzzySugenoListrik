@@ -27,17 +27,18 @@ if 'FIREBASE_CREDENTIALS' in os.environ:
 
 
 
-def fuzzyLogic(Power_input, jumlahperangkat_input=1, HasilDaya_input=0, waktu_input=0, biaya_input=0):
-    daya_listrik = float(Power_input)
-    Sum_perangkat = float(jumlahperangkat_input)
-    Daya = float(HasilDaya_input)
-    waktu = float(waktu_input)
-    biaya = float(biaya_input)
+def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=0):
+    # input Fuzzy
+    daya_listrik = float(Power)
+    Sum_perangkat = float(jumlahperangkat)
+    Daya = float(HasilDaya)
+    waktu = float(stopwatch)
+    biaya = float(biayalistrik)
 
     Power = [0, 0, 0]
     jumlahperangkat = [0, 0, 0]
     HasilDaya = [0, 0, 0]
-    stopwatch = [0, 0, 0]  # <-- jangan tertimpa
+    stopwatch = [0, 0, 0]
     biayalistrik = [0, 0]
     # 3333
 
@@ -378,14 +379,18 @@ def getData(arrayWaktu, daya):
         end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
         
         # Use the new filter syntax instead of positional where arguments
+        # Get all entries for that day and sort them manually
         day_entries = (
             db.collection("DataBase1Jalur")
             .where(filter=FieldFilter("TimeStamp", ">=", start_of_day))
             .where(filter=FieldFilter("TimeStamp", "<=", end_of_day))
-            .order_by("TimeStamp", direction=firestore.Query.DESCENDING)
-            .limit(1)
             .get()
         )
+
+        # Sort by timestamp and get the latest one
+        if len(day_entries) > 0:
+            latest_entry = max(day_entries, key=lambda x: x.to_dict().get('TimeStamp'))
+            dataTerakhir = latest_entry.to_dict()
 
 
         if len(day_entries) == 0:

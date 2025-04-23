@@ -7,8 +7,6 @@ import pandas as pd
 import os
 from google.cloud import firestore
 from google.cloud.firestore_v1 import FieldFilter
-from datetime import datetime, timedelta
-from google.cloud.firestore_v1.base_query import FieldFilter
 
 # --------------------------
 # Inisialisasi Firestore
@@ -29,18 +27,17 @@ if 'FIREBASE_CREDENTIALS' in os.environ:
 
 
 
-def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=0):
-    # input Fuzzy
-    daya_listrik = float(Power)
-    Sum_perangkat = float(jumlahperangkat)
-    Daya = float(HasilDaya)
-    waktu = float(stopwatch)
-    biaya = float(biayalistrik)
+def fuzzyLogic(Power_input, jumlahperangkat_input=1, HasilDaya_input=0, waktu_input=0, biaya_input=0):
+    daya_listrik = float(Power_input)
+    Sum_perangkat = float(jumlahperangkat_input)
+    Daya = float(HasilDaya_input)
+    waktu = float(waktu_input)
+    biaya = float(biaya_input)
 
     Power = [0, 0, 0]
     jumlahperangkat = [0, 0, 0]
     HasilDaya = [0, 0, 0]
-    stopwatch = [0, 0, 0]
+    stopwatch = [0, 0, 0]  # <-- jangan tertimpa
     biayalistrik = [0, 0]
     # 3333
 
@@ -365,87 +362,77 @@ def formatRupiah(angka):
 db = firestore.Client()
 
 
-
-
 def getData(arrayWaktu, daya):
     dataFuzy = []
     resultTable = []
     energyTotal = 0
     hargaTotal = 0
-
-    if not arrayWaktu:
+    if len(arrayWaktu) <= 0:
         return response(400, "Bad Request", data=None)
 
-    for tanggal_str in arrayWaktu:
-        dt = datetime.strptime(tanggal_str, "%Y-%m-%d")
-        start_of_day = dt.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_of_day = dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+    for i in range(len(arrayWaktu)):
+        dt = datetime.strptime(arrayWaktu[i], "%Y-%m-%d")
+        # Set start of day
+        start_of_day = datetime.replace(dt, hour=0, minute=0, second=0, microsecond=0)
+        # Set end of day
+        end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
+        
+        # Use the new filter syntax instead of positional where arguments
+        day_entries = (
+            db.collection("DataBase1Jalur")
+            .where(filter=FieldFilter("TimeStamp", ">=", start_of_day))
+            .where(filter=FieldFilter("TimeStamp", "<=", end_of_day))
+            .order_by("TimeStamp", direction=firestore.Query.DESCENDING)
+            .limit(1)
+            .get()
+        )
 
-        try:
-            day_entries = (
-                db.collection("DataBase1Jalur")
-                .where(filter=FieldFilter("TimeStamp", ">=", start_of_day))
-                .where(filter=FieldFilter("TimeStamp", "<=", end_of_day))
-                .order_by("TimeStamp", direction=firestore.Query.DESCENDING)
-                .limit(1)
-                .get()
-            )
-        except Exception as e:
-            print("Firestore query error:", e)
+
+        if len(day_entries) == 0:
             continue
 
-        if not day_entries:
-            print(f"Tidak ada data untuk tanggal {tanggal_str}")
-            continue
-
+        print(f"Last entry for {arrayWaktu[i]}:", day_entries[0].to_dict())
         dataTerakhir = day_entries[0].to_dict()
-        timestamp_raw = dataTerakhir.get('TimeStamp')
-
-        # Konversi timestamp Firestore ke datetime Python
-        if hasattr(timestamp_raw, "to_datetime"):
-            timestamp = timestamp_raw.to_datetime()
-        else:
-            timestamp = timestamp_raw  # fallback
-
-        timeElapse = timestamp.replace(tzinfo=None) - start_of_day
+        
+        # Calculate time elapsed from start of day to the last entry
+        timeElapse = dataTerakhir['TimeStamp'].replace(
+            tzinfo=None) - start_of_day.replace(tzinfo=None)
         stopwatch = round(timeElapse.total_seconds() / 3600)
-
-        energyTerakhir = dataTerakhir.get('energy') or dataTerakhir.get('Energy') or 0.0
-        dataPerangkat = dataTerakhir.get('JumlahPerangkat', 0)
-        hargaListrik = dataTerakhir.get('HargaListrik', 1352)
-
-        try:
-            hasilFuzzy = fuzzyLogic(energyTerakhir, 3, daya, stopwatch, hargaListrik)
-        except Exception as e:
-            print("Error fuzzyLogic:", e)
-            hasilFuzzy = {"fuzy": 0.0, "text": "Gagal"}
-
+        
+        if 'energy' in dataTerakhir:
+            energyTerakhir = dataTerakhir['energy']
+        elif 'Energy' in dataTerakhir:
+            energyTerakhir = dataTerakhir['Energy']
+        else:
+            energyTerakhir = 0.00
+            
+        dataPerangkat = 0
+        if 'JumlahPerangkat' in dataTerakhir:
+            dataPerangkat = dataTerakhir['JumlahPerangkat']
+            
         dataFuzy.append({
-            "waktu": dt.strftime("%d - %m - %Y"),
-            "dataFuzy": hasilFuzzy
+            "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
+            "dataFuzy": fuzzyLogic(energyTerakhir, 3, daya, stopwatch, dataTerakhir['HargaListrik']),
         })
-
-        nilaiBiaya = biaya(daya, energyTerakhir)
-
+        
         resultTable.append({
-            "waktu": dt.strftime("%d %B %Y"),
-            "power": float(dataTerakhir.get('power', 0)),
-            "energy": float(energyTerakhir),
-            "biaya": "Rp. " + formatRupiah(round(nilaiBiaya)),
+            "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
+            "power": dataPerangkat,
+            "energy": energyTerakhir,
+            "biaya": "Rp. "+formatRupiah(round(biaya(daya, energyTerakhir))),
             "stopwatch": stopwatch,
-            "jumlah": dataPerangkat
+            "jumlah": dataTerakhir['JumlahPerangkat'] if 'JumlahPerangkat' in dataTerakhir else 0
         })
-
+        
         energyTotal += energyTerakhir
-        hargaTotal += nilaiBiaya
+        hargaTotal += biaya(daya, energyTerakhir)
 
     return {
         "dataFuzy": dataFuzy,
         "resultTable": resultTable,
         "energyTotal": round(energyTotal, 3),
-        "hargaTotal": "Rp. " + formatRupiah(round(hargaTotal))
+        "hargaTotal": "Rp. "+formatRupiah(round(hargaTotal))
     }
-
 
 
 app = Flask(__name__)

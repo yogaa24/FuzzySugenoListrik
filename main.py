@@ -383,9 +383,6 @@ def getData(arrayWaktu, daya):
         # Set end of day dengan zona waktu yang tepat
         end_of_day = timezone.localize(datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999))
         
-        # Debug - print range waktu yang digunakan untuk query
-        print(f"Querying for date range: {start_of_day} to {end_of_day}")
-        
         # Query Firestore - ambil semua dokumen untuk hari tersebut
         day_entries = (
             db.collection("DataBase1Jalur")
@@ -394,68 +391,38 @@ def getData(arrayWaktu, daya):
             .get()
         )
         
-        # Debug - print jumlah entri yang ditemukan
         print(f"Found {len(day_entries)} entries for {arrayWaktu[i]}")
         
         if len(day_entries) == 0:
             print(f"No entries found for {arrayWaktu[i]}")
             continue
         
-        # Pastikan semua entries memiliki TimeStamp
-        valid_entries = []
-        for entry in day_entries:
-            entry_dict = entry.to_dict()
-            if 'TimeStamp' in entry_dict:
-                # Print timestamp untuk debugging
-                ts = entry_dict['TimeStamp']
-                print(f"Entry timestamp: {ts}, type: {type(ts)}")
-                valid_entries.append(entry)
+        valid_entries = [entry for entry in day_entries if 'TimeStamp' in entry.to_dict()]
         
         if not valid_entries:
             print(f"No valid entries with TimeStamp for {arrayWaktu[i]}")
             continue
         
-        # Sort dan ambil entry dengan timestamp terbaru
         latest_entry = max(valid_entries, key=lambda x: x.to_dict().get('TimeStamp'))
         dataTerakhir = latest_entry.to_dict()
         
-        # Debug - print info terperinci tentang entry terakhir yang dipilih
+        print(f"Selected latest entry for {arrayWaktu[i]}: TimeStamp={dataTerakhir.get('TimeStamp')}, Energy={dataTerakhir.get('energy')}")
+        
+        # PERBAIKAN: Jangan hilangkan informasi timezone
         timestamp = dataTerakhir['TimeStamp']
-        print(f"Latest entry timestamp: {timestamp}")
-        print(f"Timestamp details - Hour: {timestamp.hour}, Minute: {timestamp.minute}")
-        print(f"Timestamp type: {type(timestamp)}")
         
-        # Jika timestamp adalah string, konversi ke datetime
-        if isinstance(timestamp, str):
-            try:
-                timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S%z")
-                print(f"Converted string timestamp to datetime: {timestamp}")
-            except ValueError:
-                print(f"Failed to parse timestamp string: {timestamp}")
-                # Coba format lain jika perlu
+        # Metode 1: Gunakan langsung jam dari timestamp (paling sederhana)
+        hour = timestamp.hour
+        minute = timestamp.minute
+        stopwatch = round(hour + (minute / 60))
         
-        # Untuk timestamp yang adalah objek datetime, pastikan memiliki timezone info
-        if isinstance(timestamp, datetime):
-            if timestamp.tzinfo is None:
-                # Tambahkan timezone jika tidak ada
-                timestamp = timezone.localize(timestamp)
-                print(f"Added timezone info to timestamp: {timestamp}")
-            
-            # Hitung waktu dari jam 0 sampai timestamp ini
-            # Ini menggunakan jam dan menit dari timestamp, tanpa memperhatikan tanggal
-            hours = timestamp.hour
-            minutes = timestamp.minute
-            
-            # Hitung jam sebagai floating point (jam + menit/60)
-            stopwatch = hours + (minutes / 60)
-            
-            # Bulatkan ke bilangan bulat terdekat
-            stopwatch = round(stopwatch)
-            
-            print(f"Calculated stopwatch hours: {stopwatch}")
-        else:
-            print(f"WARNING: Timestamp is not a datetime object: {timestamp}")
-            stopwatch = 0
+        # Metode 2: Hitung selisih waktu dengan benar (lebih tepat)
+        # start_day_time = datetime.combine(timestamp.date(), datetime.min.time())
+        # start_day_time = timezone.localize(start_day_time)
+        # time_diff = timestamp - start_day_time
+        # stopwatch = round(time_diff.total_seconds() / 3600)
+        
+        print(f"Timestamp hour: {hour}, minute: {minute}, stopwatch: {stopwatch}")
         
         # Handle kasus energy yang berbeda penulisan
         energyTerakhir = 0.00

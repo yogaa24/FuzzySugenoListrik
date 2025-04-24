@@ -411,11 +411,17 @@ def getData(arrayWaktu, daya):
         
         print(f"Selected latest entry for {arrayWaktu[i]}: TimeStamp={dataTerakhir.get('TimeStamp')}, Energy={dataTerakhir.get('energy')}")
         
-        # Hitung waktu yang berlalu - pastikan timezone konsisten
-        start_of_day_naive = start_of_day.replace(tzinfo=None)
-        timestamp_naive = dataTerakhir['TimeStamp'].replace(tzinfo=None)
-        timeElapse = timestamp_naive - start_of_day_naive
-        stopwatch = round(timeElapse.total_seconds() / 3600)
+        # Hitung waktu yang berlalu - perbaikan perhitungan stopwatch
+        timestamp = dataTerakhir['TimeStamp']  # Ini adalah objek datetime dengan tzinfo
+        
+        # Ekstrak jam dari timestamp
+        hours = timestamp.hour
+        minutes = timestamp.minute
+        
+        # Hitung stopwatch dalam jam (jam + menit/60)
+        stopwatch = hours + (minutes / 60)
+        # Bulatkan ke bilangan bulat terdekat jika diperlukan
+        stopwatch = round(stopwatch)
         
         # Handle kasus energy yang berbeda penulisan
         energyTerakhir = 0.00

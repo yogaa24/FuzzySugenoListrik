@@ -408,21 +408,18 @@ def getData(arrayWaktu, daya):
         
         print(f"Selected latest entry for {arrayWaktu[i]}: TimeStamp={dataTerakhir.get('TimeStamp')}, Energy={dataTerakhir.get('energy')}")
         
-        # PERBAIKAN: Jangan hilangkan informasi timezone
-        timestamp = dataTerakhir['TimeStamp']
+        # PERBAIKAN: Konversi UTC timestamp ke zona waktu lokal (Asia/Jakarta)
+        timestamp_utc = dataTerakhir['TimeStamp']
+        timestamp_local = timestamp_utc.astimezone(timezone)  # Konversi ke Asia/Jakarta (UTC+7)
         
-        # Metode 1: Gunakan langsung jam dari timestamp (paling sederhana)
-        hour = timestamp.hour
-        minute = timestamp.minute
+        print(f"UTC timestamp: {timestamp_utc}, Local timestamp: {timestamp_local}")
+        
+        # Gunakan timestamp lokal untuk menghitung jam
+        hour = timestamp_local.hour
+        minute = timestamp_local.minute
         stopwatch = round(hour + (minute / 60))
         
-        # Metode 2: Hitung selisih waktu dengan benar (lebih tepat)
-        # start_day_time = datetime.combine(timestamp.date(), datetime.min.time())
-        # start_day_time = timezone.localize(start_day_time)
-        # time_diff = timestamp - start_day_time
-        # stopwatch = round(time_diff.total_seconds() / 3600)
-        
-        print(f"Timestamp hour: {hour}, minute: {minute}, stopwatch: {stopwatch}")
+        print(f"Local timestamp hour: {hour}, minute: {minute}, stopwatch: {stopwatch}")
         
         # Handle kasus energy yang berbeda penulisan
         energyTerakhir = 0.00

@@ -411,11 +411,12 @@ def getData(arrayWaktu, daya):
         
         print(f"Selected latest entry for {arrayWaktu[i]}: TimeStamp={dataTerakhir.get('TimeStamp')}, Energy={dataTerakhir.get('energy')}")
         
-        # Hitung waktu yang berlalu - pastikan timezone konsisten
-        start_of_day_naive = start_of_day.replace(tzinfo=None)
+        # Hitung stopwatch - jam yang berlalu sejak 00:00
         timestamp_naive = dataTerakhir['TimeStamp'].replace(tzinfo=None)
-        timeElapse = timestamp_naive - start_of_day_naive
-        stopwatch = round(timeElapse.total_seconds() / 3600)
+        # Ambil hanya jam dari timestamp
+        stopwatch = timestamp_naive.hour + (timestamp_naive.minute / 60) + (timestamp_naive.second / 3600)
+        # Bulatkan ke angka bulat jika diperlukan
+        stopwatch = round(stopwatch)
         
         # Handle kasus energy yang berbeda penulisan
         energyTerakhir = 0.00
@@ -444,16 +445,6 @@ def getData(arrayWaktu, daya):
             "stopwatch": stopwatch,
             "jumlah": dataTerakhir['JumlahPerangkat'] if 'JumlahPerangkat' in dataTerakhir else 0
         })
-        
-        energyTotal += energyTerakhir
-        hargaTotal += biaya(daya, energyTerakhir)
-
-    return {
-        "dataFuzy": dataFuzy,
-        "resultTable": resultTable,
-        "energyTotal": round(energyTotal, 3),
-        "hargaTotal": "Rp. "+formatRupiah(round(hargaTotal))
-    }
 
 
 app = Flask(__name__)

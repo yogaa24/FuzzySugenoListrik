@@ -370,56 +370,62 @@ def getData(arrayWaktu, daya):
     energyTotal = 0
     hargaTotal = 0
     
-    # Definisikan zona waktu yang sama dengan Firestore Anda
-    timezone = pytz.timezone('Asia/Jakarta')  # UTC+7
+    # Definisikan zona waktu Firestore (UTC) dan zona waktu lokal (Asia/Jakarta)
+    utc_timezone = pytz.timezone('UTC')  # Firestore menyimpan data di UTC
+    local_timezone = pytz.timezone('Asia/Jakarta')  # UI menggunakan UTC+7
     
     if len(arrayWaktu) <= 0:
         return response(400, "Bad Request", data=None)
 
     for i in range(len(arrayWaktu)):
+        # Parse tanggal input
         dt = datetime.strptime(arrayWaktu[i], "%Y-%m-%d")
-        # Set start of day dengan zona waktu yang tepat
-        start_of_day = timezone.localize(datetime.replace(dt, hour=0, minute=0, second=0, microsecond=0))
-        # Set end of day dengan zona waktu yang tepat
-        end_of_day = timezone.localize(datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999))
         
-        # Query Firestore - ambil semua dokumen untuk hari tersebut
+        # Buat start_of_day dan end_of_day di timezone UTC (sesuai Firestore)
+        # Pertama buat di local timezone lalu konversi ke UTC untuk query
+        local_start_of_day = local_timezone.localize(datetime(dt.year, dt.month, dt.day, 0, 0, 0, 0))
+        local_end_of_day = local_timezone.localize(datetime(dt.year, dt.month, dt.day, 23, 59, 59, 999999))
+        
+        # Konversi ke UTC untuk query Firestore
+        utc_start_of_day = local_start_of_day.astimezone(utc_timezone)
+        utc_end_of_day = local_end_of_day.astimezone(utc_timezone)
+        
+        # Query Firestore dengan timestamp UTC
         day_entries = (
             db.collection("DataBase1Jalur")
-            .where(filter=FieldFilter("TimeStamp", ">=", start_of_day))
-            .where(filter=FieldFilter("TimeStamp", "<=", end_of_day))
+            .where(filter=FieldFilter("TimeStamp", ">=", utc_start_of_day))
+            .where(filter=FieldFilter("TimeStamp", "<=", utc_end_of_day))
             .get()
         )
         
+        # Debug - print jumlah entri yang ditemukan
         print(f"Found {len(day_entries)} entries for {arrayWaktu[i]}")
         
         if len(day_entries) == 0:
             print(f"No entries found for {arrayWaktu[i]}")
             continue
         
+        # Pastikan semua entries memiliki TimeStamp
         valid_entries = [entry for entry in day_entries if 'TimeStamp' in entry.to_dict()]
         
         if not valid_entries:
             print(f"No valid entries with TimeStamp for {arrayWaktu[i]}")
             continue
         
+        # Sort dan ambil entry dengan timestamp terbaru
         latest_entry = max(valid_entries, key=lambda x: x.to_dict().get('TimeStamp'))
         dataTerakhir = latest_entry.to_dict()
         
-        print(f"Selected latest entry for {arrayWaktu[i]}: TimeStamp={dataTerakhir.get('TimeStamp')}, Energy={dataTerakhir.get('energy')}")
+        # Konversi timestamp dari Firestore (UTC) ke timezone lokal (Asia/Jakarta)
+        firestore_timestamp = dataTerakhir.get('TimeStamp')
+        local_timestamp = firestore_timestamp.astimezone(local_timezone) if firestore_timestamp.tzinfo else local_timezone.localize(firestore_timestamp)
         
-        # PERBAIKAN: Konversi UTC timestamp ke zona waktu lokal (Asia/Jakarta)
-        timestamp_utc = dataTerakhir['TimeStamp']
-        timestamp_local = timestamp_utc.astimezone(timezone)  # Konversi ke Asia/Jakarta (UTC+7)
+        print(f"Selected latest entry for {arrayWaktu[i]}: TimeStamp={local_timestamp}, Energy={dataTerakhir.get('energy')}")
         
-        print(f"UTC timestamp: {timestamp_utc}, Local timestamp: {timestamp_local}")
-        
-        # Gunakan timestamp lokal untuk menghitung jam
-        hour = timestamp_local.hour
-        minute = timestamp_local.minute
-        stopwatch = round(hour + (minute / 60))
-        
-        print(f"Local timestamp hour: {hour}, minute: {minute}, stopwatch: {stopwatch}")
+        # Hitung waktu yang berlalu dalam timezone lokal
+        # Menggunakan timestamp lokal untuk perhitungan yang akurat sesuai dengan waktu di UI
+        elapsed_hours = (local_timestamp - local_start_of_day).total_seconds() / 3600
+        stopwatch = round(elapsed_hours)
         
         # Handle kasus energy yang berbeda penulisan
         energyTerakhir = 0.00

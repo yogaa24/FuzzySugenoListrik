@@ -401,10 +401,18 @@ def getData(arrayWaktu, daya):
         print(f"Last entry for {arrayWaktu[i]}:", day_entries[0].to_dict())
         dataTerakhir = day_entries[0].to_dict()
         
-        # Calculate time elapsed from start of day to the last entry
-        timeElapse = dataTerakhir['TimeStamp'].replace(
-            tzinfo=None) - start_of_day.replace(tzinfo=None)
-        stopwatch = round(timeElapse.total_seconds() / 3600)
+        # Hitung waktu yang berlalu dari awal hari sampai timestamp data
+        start_of_day_naive = datetime.combine(dataTerakhir['TimeStamp'].date(), datetime.min.time())
+        timestamp_naive = dataTerakhir['TimeStamp']
+
+        # Pastikan keduanya menggunakan format yang sama (tanpa timezone atau dengan timezone yang sama)
+        if timestamp_naive.tzinfo:
+            # Jika timestamp memiliki timezone, hapus timezone dari keduanya untuk perbandingan yang konsisten
+            start_of_day_naive = start_of_day_naive.replace(tzinfo=None)
+            timestamp_naive = timestamp_naive.replace(tzinfo=None)
+
+        timeElapse = timestamp_naive - start_of_day_naive
+        stopwatch = round(timeElapse.total_seconds() / 3600)  # Hasil dalam jam
         
         if 'energy' in dataTerakhir:
             energyTerakhir = dataTerakhir['energy']

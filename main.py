@@ -378,49 +378,64 @@ def getData(arrayWaktu, daya):
 
     for i in range(len(arrayWaktu)):
         dt = datetime.strptime(arrayWaktu[i], "%Y-%m-%d")
-        # Set start of day
-        start_of_day = datetime.replace(dt, hour=0, minute=0, second=0, microsecond=0)
-        # Set end of day
-        end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
+        # Set start of day dengan zona waktu yang tepat
+        start_of_day = timezone.localize(datetime.replace(dt, hour=0, minute=0, second=0, microsecond=0))
+        # Set end of day dengan zona waktu yang tepat
+        end_of_day = timezone.localize(datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999))
         
-        # Use the new filter syntax instead of positional where arguments
+        # Query Firestore - ambil semua dokumen untuk hari tersebut
         day_entries = (
             db.collection("DataBase1Jalur")
             .where(filter=FieldFilter("TimeStamp", ">=", start_of_day))
             .where(filter=FieldFilter("TimeStamp", "<=", end_of_day))
-            .order_by("TimeStamp", direction=firestore.Query.DESCENDING)
-            .limit(1)
             .get()
         )
-
-
-        if len(day_entries) == 0:
-            continue
-
-        print(f"Last entry for {arrayWaktu[i]}:", day_entries[0].to_dict())
-        dataTerakhir = day_entries[0].to_dict()
         
-        # Calculate time elapsed from start of day to the last entry
-        timeElapse = dataTerakhir['TimeStamp'].replace(
-            tzinfo=None) - start_of_day.replace(tzinfo=None)
+        # Debug - print jumlah entri yang ditemukan
+        print(f"Found {len(day_entries)} entries for {arrayWaktu[i]}")
+        
+        if len(day_entries) == 0:
+            print(f"No entries found for {arrayWaktu[i]}")
+            continue
+        
+        # Pastikan semua entries memiliki TimeStamp
+        valid_entries = [entry for entry in day_entries if 'TimeStamp' in entry.to_dict()]
+        
+        if not valid_entries:
+            print(f"No valid entries with TimeStamp for {arrayWaktu[i]}")
+            continue
+        
+        # Sort dan ambil entry dengan timestamp terbaru
+        latest_entry = max(valid_entries, key=lambda x: x.to_dict().get('TimeStamp'))
+        dataTerakhir = latest_entry.to_dict()
+        
+        print(f"Selected latest entry for {arrayWaktu[i]}: TimeStamp={dataTerakhir.get('TimeStamp')}, Energy={dataTerakhir.get('energy')}")
+        
+        # Hitung waktu yang berlalu - pastikan timezone konsisten
+        start_of_day_naive = start_of_day.replace(tzinfo=None)
+        timestamp_naive = dataTerakhir['TimeStamp'].replace(tzinfo=None)
+        timeElapse = timestamp_naive - start_of_day_naive
         stopwatch = round(timeElapse.total_seconds() / 3600)
         
+        # Handle kasus energy yang berbeda penulisan
+        energyTerakhir = 0.00
         if 'energy' in dataTerakhir:
             energyTerakhir = dataTerakhir['energy']
         elif 'Energy' in dataTerakhir:
             energyTerakhir = dataTerakhir['Energy']
-        else:
-            energyTerakhir = 0.00
-            
+        
+        # Handle JumlahPerangkat
         dataPerangkat = 0
         if 'JumlahPerangkat' in dataTerakhir:
             dataPerangkat = dataTerakhir['JumlahPerangkat']
             
+        # Fungsi fuzzy logic
         dataFuzy.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
             "dataFuzy": fuzzyLogic(energyTerakhir, 3, daya, stopwatch, dataTerakhir['HargaListrik']),
         })
         
+        # Tabel hasil
         resultTable.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
             "power": dataPerangkat,

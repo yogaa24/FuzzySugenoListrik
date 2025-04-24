@@ -380,7 +380,7 @@ def getData(arrayWaktu, daya):
     for i in range(len(arrayWaktu)):
         dt = datetime.strptime(arrayWaktu[i], "%Y-%m-%d")
         # Set start of day dengan zona waktu yang tepat
-        start_of_day = timezone.localize(datetime.replace(dt, hour=0, minute=0, second=0, microsecond=0))
+        start_of_day = timezone.localize(datetime.combine(dt.date(), datetime.min.time()))
         # Set end of day dengan zona waktu yang tepat
         end_of_day = timezone.localize(datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999))
         

@@ -445,6 +445,16 @@ def getData(arrayWaktu, daya):
             "stopwatch": stopwatch,
             "jumlah": dataTerakhir['JumlahPerangkat'] if 'JumlahPerangkat' in dataTerakhir else 0
         })
+        
+        energyTotal += energyTerakhir
+        hargaTotal += biaya(daya, energyTerakhir)
+
+    return {
+        "dataFuzy": dataFuzy,
+        "resultTable": resultTable,
+        "energyTotal": round(energyTotal, 3),
+        "hargaTotal": "Rp. "+formatRupiah(round(hargaTotal))
+    }
 
 
 app = Flask(__name__)

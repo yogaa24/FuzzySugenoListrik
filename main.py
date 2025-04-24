@@ -374,62 +374,40 @@ def getData(arrayWaktu, daya):
     # Definisikan zona waktu yang sama dengan Firestore Anda
     timezone = pytz.timezone('Asia/Jakarta')  # UTC+7
     
-    if len(arrayWaktu) <= 0:
+    if len(arrayWaktu) < 0:
         return response(400, "Bad Request", data=None)
 
     for i in range(len(arrayWaktu)):
         dt = datetime.strptime(arrayWaktu[i], "%Y-%m-%d")
-        # Set start of day
-        start_of_day = datetime.replace(dt, hour=0, minute=0, second=0, microsecond=0)
-        # Set end of day
-        end_of_day = datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999)
-        
-        # Use the new filter syntax instead of positional where arguments
-        day_entries = (
-            db.collection("DataBase1Jalur")
-            .where(filter=FieldFilter("TimeStamp", ">=", start_of_day))
-            .where(filter=FieldFilter("TimeStamp", "<=", end_of_day))
-            .order_by("TimeStamp", direction=firestore.Query.DESCENDING)
-            .limit(1)
-            .get()
-        )
+        dts = datetime.replace(dt, hour=23, minute=58,
+                               second=59, microsecond=0)
+        dtTwo = datetime.replace(dt, hour=23, minute=59, second=59)
+        print(dts, dtTwo)
+        getLastestDataFromFirestore = db.collection('DataBase3Jalur').where(
+            'TimeStamp', ">=", dts).limit(1).get()
 
-
-        if len(day_entries) == 0:
+        if len(getLastestDataFromFirestore) == 0:
             continue
 
-        print(f"Last entry for {arrayWaktu[i]}:", day_entries[0].to_dict())
-        dataTerakhir = day_entries[0].to_dict()
-        
-        # Hitung waktu yang berlalu dari awal hari sampai timestamp data
-        start_of_day_naive = datetime.combine(dataTerakhir['TimeStamp'].date(), datetime.min.time())
-        timestamp_naive = dataTerakhir['TimeStamp']
-
-        # Pastikan keduanya menggunakan format yang sama (tanpa timezone atau dengan timezone yang sama)
-        if timestamp_naive.tzinfo:
-            # Jika timestamp memiliki timezone, hapus timezone dari keduanya untuk perbandingan yang konsisten
-            start_of_day_naive = start_of_day_naive.replace(tzinfo=None)
-            timestamp_naive = timestamp_naive.replace(tzinfo=None)
-
-        timeElapse = timestamp_naive - start_of_day_naive
-        stopwatch = round(timeElapse.total_seconds() / 3600)  # Hasil dalam jam
-        
+        print(getLastestDataFromFirestore[0].to_dict())
+        dataTerakhir = getLastestDataFromFirestore[len(
+            getLastestDataFromFirestore) - 1].to_dict()
+        timeElapse = dataTerakhir['TimeStamp'].replace(
+            tzinfo=None) - dt.replace(tzinfo=None)
+        stopwatch = round(timeElapse.total_seconds() / 3600)
         if 'energy' in dataTerakhir:
             energyTerakhir = dataTerakhir['energy']
         elif 'Energy' in dataTerakhir:
             energyTerakhir = dataTerakhir['Energy']
         else:
             energyTerakhir = 0.00
-            
         dataPerangkat = 0
         if 'JumlahPerangkat' in dataTerakhir:
             dataPerangkat = dataTerakhir['JumlahPerangkat']
-            
         dataFuzy.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
             "dataFuzy": fuzzyLogic(energyTerakhir, 3, daya, stopwatch, dataTerakhir['HargaListrik']),
         })
-        
         resultTable.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d %B %Y"),
             "power": dataPerangkat,
@@ -438,7 +416,6 @@ def getData(arrayWaktu, daya):
             "stopwatch": stopwatch,
             "jumlah": dataTerakhir['JumlahPerangkat'] if 'JumlahPerangkat' in dataTerakhir else 0
         })
-        
         energyTotal += energyTerakhir
         hargaTotal += biaya(daya, energyTerakhir)
 

@@ -409,30 +409,13 @@ def getData(arrayWaktu, daya):
         latest_entry = max(valid_entries, key=lambda x: x.to_dict().get('TimeStamp'))
         dataTerakhir = latest_entry.to_dict()
         
-        # Dapatkan TimeStamp dari entri terbaru
-        timestamp = dataTerakhir['TimeStamp']
+        print(f"Selected latest entry for {arrayWaktu[i]}: TimeStamp={dataTerakhir.get('TimeStamp')}, Energy={dataTerakhir.get('energy')}")
         
-        # Debug untuk melihat nilai timestamp asli
-        print(f"Original timestamp: {timestamp}")
-        print(f"Timestamp type: {type(timestamp)}")
-        
-        # Konversi ke timezone Asia/Jakarta jika belum
-        if timestamp.tzinfo is None:
-            timestamp = timezone.localize(timestamp)
-        
-        # Pastikan timestamp dalam UTC+7 untuk konsistensi
-        timestamp = timestamp.astimezone(timezone)
-        
-        print(f"After TZ conversion: {timestamp}")
-        print(f"Hour: {timestamp.hour}")
-        
-        # Hitung stopwatch berdasarkan jam di format 24 jam
-        stopwatch = timestamp.hour
-        if timestamp.hour >= 18:  # Jika jam 6 PM atau lebih
-            stopwatch = 18  # Pastikan ini adalah jam 6 PM dalam format 24 jam
-        
-        # Debug untuk melihat nilai stopwatch
-        print(f"Calculated stopwatch: {stopwatch}")
+        # Hitung waktu yang berlalu - pastikan timezone konsisten
+        start_of_day_naive = start_of_day.replace(tzinfo=None)
+        timestamp_naive = dataTerakhir['TimeStamp'].replace(tzinfo=None)
+        timeElapse = timestamp_naive - start_of_day_naive
+        stopwatch = round(timeElapse.total_seconds() / 3600)
         
         # Handle kasus energy yang berbeda penulisan
         energyTerakhir = 0.00
@@ -462,17 +445,15 @@ def getData(arrayWaktu, daya):
             "jumlah": dataTerakhir['JumlahPerangkat'] if 'JumlahPerangkat' in dataTerakhir else 0
         })
         
-        # Tambahkan ke total
         energyTotal += energyTerakhir
         hargaTotal += biaya(daya, energyTerakhir)
-    
-    # Return response dengan hasil lengkap
-    return response(200, "OK", {
+
+    return {
         "dataFuzy": dataFuzy,
         "resultTable": resultTable,
         "energyTotal": round(energyTotal, 3),
-        "hargaTotal": "Rp. " + formatRupiah(round(hargaTotal))
-    })
+        "hargaTotal": "Rp. "+formatRupiah(round(hargaTotal))
+    }
 
 
 app = Flask(__name__)

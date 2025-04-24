@@ -380,7 +380,7 @@ def getData(arrayWaktu, daya):
     for i in range(len(arrayWaktu)):
         dt = datetime.strptime(arrayWaktu[i], "%Y-%m-%d")
         # Set start of day dengan zona waktu yang tepat
-        start_of_day = timezone.localize(datetime.combine(dt.date(), datetime.min.time()))
+        start_of_day = timezone.localize(datetime.replace(dt, hour=0, minute=0, second=0, microsecond=0))
         # Set end of day dengan zona waktu yang tepat
         end_of_day = timezone.localize(datetime.replace(dt, hour=23, minute=59, second=59, microsecond=999999))
         
@@ -413,11 +413,11 @@ def getData(arrayWaktu, daya):
         print(f"Selected latest entry for {arrayWaktu[i]}: TimeStamp={dataTerakhir.get('TimeStamp')}, Energy={dataTerakhir.get('energy')}")
         
         # Hitung waktu yang berlalu - pastikan timezone konsisten
-        start_of_day_naive = start_of_day.replace(tzinfo=None)
-        timestamp_naive = dataTerakhir['TimeStamp'].replace(tzinfo=None)
-        timeElapse = timestamp_naive - start_of_day_naive
-        stopwatch = round(timeElapse.total_seconds() / 3600)
-        
+        start_time = timezone.localize(datetime.replace(dt, hour=11, minute=20, second=0, microsecond=0))
+        timestamp_time = dataTerakhir['TimeStamp']
+        timeElapse = timestamp_time - start_time
+        stopwatch = round(timeElapse.total_seconds() / 3600, 2)  # Round to 2 decimal places for more accuracy
+                
         # Handle kasus energy yang berbeda penulisan
         energyTerakhir = 0.00
         if 'energy' in dataTerakhir:

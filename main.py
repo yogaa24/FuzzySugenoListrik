@@ -411,16 +411,16 @@ def getData(arrayWaktu, daya):
         # PERBAIKAN: Jangan hilangkan informasi timezone
         timestamp = dataTerakhir['TimeStamp']
         
-        # Metode 1: Gunakan langsung jam dari timestamp (paling sederhana)
-        hour = timestamp.hour
-        minute = timestamp.minute
-        stopwatch = round(hour + (minute / 60))
+        # # Metode 1: Gunakan langsung jam dari timestamp (paling sederhana)
+        # hour = timestamp.hour
+        # minute = timestamp.minute
+        # stopwatch = round(hour + (minute / 60))
         
         # Metode 2: Hitung selisih waktu dengan benar (lebih tepat)
-        # start_day_time = datetime.combine(timestamp.date(), datetime.min.time())
-        # start_day_time = timezone.localize(start_day_time)
-        # time_diff = timestamp - start_day_time
-        # stopwatch = round(time_diff.total_seconds() / 3600)
+        start_day_time = datetime.combine(timestamp.date(), datetime.min.time())
+        start_day_time = timezone.localize(start_day_time)
+        time_diff = timestamp - start_day_time
+        stopwatch = round(time_diff.total_seconds() / 3600)
         
         print(f"Timestamp hour: {hour}, minute: {minute}, stopwatch: {stopwatch}")
         

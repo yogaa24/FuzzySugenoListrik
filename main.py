@@ -412,11 +412,17 @@ def getData(arrayWaktu, daya):
         print(f"Selected latest entry for {arrayWaktu[i]}: TimeStamp={dataTerakhir.get('TimeStamp')}, Energy={dataTerakhir.get('energy')}")
         
         # Hitung stopwatch - jam yang berlalu sejak 00:00
-        timestamp_naive = dataTerakhir['TimeStamp'].replace(tzinfo=None)
-        # Ambil hanya jam dari timestamp
-        stopwatch = timestamp_naive.hour + (timestamp_naive.minute / 60) + (timestamp_naive.second / 3600)
-        # Bulatkan ke angka bulat jika diperlukan
-        stopwatch = round(stopwatch)
+        timestamp = dataTerakhir['TimeStamp']
+        
+        # Cetak timestamp untuk debugging
+        print(f"Raw timestamp: {timestamp}")
+        print(f"Timestamp hour: {timestamp.hour}, minute: {timestamp.minute}")
+        
+        # Gunakan langsung nilai jam 24 jam
+        stopwatch = timestamp.hour
+        
+        # Debug
+        print(f"Calculated stopwatch: {stopwatch}")
         
         # Handle kasus energy yang berbeda penulisan
         energyTerakhir = 0.00

@@ -80,35 +80,62 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
     penggunaan_tinggi = 2
 
     # fuzzyfication
-    # sensor daya listrik
+    # energy listrik
     # RENDAH	0	0,66	1
     # SEDANG	0,833	1,66	2,5
     # TINGGI	2,33	3,66	4
-    # #dayalistrik rendah
-    if daya_listrik < 0.66:
+    # energylistrik rendah
+
+# KwH Rendah
+    if daya_listrik <= 0.66:
         Power[0] = 1
-    elif daya_listrik < 1:
-        Power[0] = (1 - daya_listrik)/(1 - 0.83)
+    elif daya_listrik < 0.83:
+        Power[0] = (0.83 - daya_listrik) / (0.83 - 0.66)
     else:
         Power[0] = 0
-
-    # dayalistrik Sedang
-    if daya_listrik < 0.83:
+    
+    # KwH Sedang
+    if daya_listrik <= 0.66 or daya_listrik >= 2.5:
         Power[1] = 0
-    elif daya_listrik < 1.66:
-        Power[1] = (daya_listrik-0.83)/(1.6 - 0.83)
-    elif daya_listrik < 2.5:
-        Power[1] = (2.5-daya_listrik)/(2.5 - 1.6)
-    else:
-        Power[1] = 0
-
-    # dayalistrik Tinggi
-    if daya_listrik < 2.33:
+    elif 0.66 < daya_listrik <= 0.833:
+        Power[1] = (daya_listrik - 0.66) / (0.833 - 0.66)
+    elif 0.833 <= daya_listrik <= 1.66:
+        Power[1] = 1
+    elif 1.66 < daya_listrik < 2.5:
+        Power[1] = (2.5 - daya_listrik) / (2.5 - 1.66)
+    
+    # KwH Tinggi
+    if daya_listrik <= 1.66:
         Power[2] = 0
-    elif daya_listrik < 3.66:
-        Power[2] = (daya_listrik-3.66)/(3.66 - 2.33)
+    elif daya_listrik < 2.5:
+        Power[2] = (daya_listrik - 1.66) / (2.5 - 1.66)
     else:
         Power[2] = 1
+
+    # if daya_listrik < 0.66:
+    #     Power[0] = 1
+    # elif daya_listrik < 1:
+    #     Power[0] = (1 - daya_listrik)/(1 - 0.83)
+    # else:
+    #     Power[0] = 0
+
+    # # energylistrik Sedang
+    # if daya_listrik < 0.83:
+    #     Power[1] = 0
+    # elif daya_listrik < 1.66:
+    #     Power[1] = (daya_listrik-0.83)/(1.6 - 0.83)
+    # elif daya_listrik < 2.5:
+    #     Power[1] = (2.5-daya_listrik)/(2.5 - 1.6)
+    # else:
+    #     Power[1] = 0
+
+    # # energylistrik Tinggi
+    # if daya_listrik < 2.33:
+    #     Power[2] = 0
+    # elif daya_listrik < 3.66:
+    #     Power[2] = (daya_listrik-3.66)/(3.66 - 2.33)
+    # else:
+    #     Power[2] = 1
 
     # inputan banyak perangkat
     # sedikit		0	4

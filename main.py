@@ -86,30 +86,58 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
     # TINGGI	2,33	3,66	4
     # energylistrik rendah
 
-# KwH Rendah
+    # # KwH Rendah
+    # if daya_listrik <= 0.66:
+    #     Power[0] = 1
+    # elif daya_listrik < 0.83:
+    #     Power[0] = (0.83 - daya_listrik) / (0.83 - 0.66)
+    # else:
+    #     Power[0] = 0
+    
+    # # KwH Sedang
+    # if daya_listrik <= 0.66 or daya_listrik >= 2.5:
+    #     Power[1] = 0
+    # elif 0.66 < daya_listrik <= 0.833:
+    #     Power[1] = (daya_listrik - 0.66) / (0.833 - 0.66)
+    # elif 0.833 <= daya_listrik <= 1.66:
+    #     Power[1] = 1
+    # elif 1.66 < daya_listrik < 2.5:
+    #     Power[1] = (2.5 - daya_listrik) / (2.5 - 1.66)
+    
+    # # KwH Tinggi
+    # if daya_listrik <= 1.66:
+    #     Power[2] = 0
+    # elif daya_listrik < 2.5:
+    #     Power[2] = (daya_listrik - 1.66) / (2.5 - 1.66)
+    # else:
+    #     Power[2] = 1
+
+    # Fungsi keanggotaan KwHRendah
     if daya_listrik <= 0.66:
         Power[0] = 1
-    elif daya_listrik < 0.83:
+    elif 0.66 < daya_listrik < 0.83:
         Power[0] = (0.83 - daya_listrik) / (0.83 - 0.66)
     else:
         Power[0] = 0
-    
-    # KwH Sedang
+
+    # Fungsi keanggotaan SKwHSedang
     if daya_listrik <= 0.66 or daya_listrik >= 2.5:
         Power[1] = 0
     elif 0.66 < daya_listrik <= 0.833:
         Power[1] = (daya_listrik - 0.66) / (0.833 - 0.66)
-    elif 0.833 <= daya_listrik <= 1.66:
+    elif 0.833 < daya_listrik <= 1.66:
         Power[1] = 1
     elif 1.66 < daya_listrik < 2.5:
         Power[1] = (2.5 - daya_listrik) / (2.5 - 1.66)
-    
-    # KwH Tinggi
+    else:
+        Power[1] = 0
+
+    # Fungsi keanggotaan KwHTinggi
     if daya_listrik <= 1.66:
         Power[2] = 0
-    elif daya_listrik < 2.5:
+    elif 1.66 < daya_listrik < 2.5:
         Power[2] = (daya_listrik - 1.66) / (2.5 - 1.66)
-    else:
+    else:  # daya_listrik >= 2.5
         Power[2] = 1
 
     # if daya_listrik < 0.66:

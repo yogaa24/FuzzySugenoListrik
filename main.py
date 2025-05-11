@@ -79,204 +79,131 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
     penggunaan_normal = 1
     penggunaan_tinggi = 2
 
-    # fuzzyfication
-    # energy listrik
-    # RENDAH	0	0,66	1
-    # SEDANG	0,833	1,66	2,5
-    # TINGGI	2,33	3,66	4
-    # energylistrik rendah
 
-    # KwH Rendah
+        # Fungsi keanggotaan KwHRendah sesuai rumus
     if daya_listrik <= 0.66:
         Power[0] = 1
-    elif daya_listrik < 0.83:
-        Power[0] = (0.833 - daya_listrik) / (0.833 - 0.66)
+    elif 0.66 < daya_listrik <= 0.83:
+        Power[0] = (0.83 - daya_listrik) / (0.83 - 0.66)
     else:
         Power[0] = 0
-    
-    # KwH Sedang
+
+    # Fungsi keanggotaan KwHSedang sesuai rumus
     if daya_listrik <= 0.66 or daya_listrik >= 2.5:
         Power[1] = 0
     elif 0.66 < daya_listrik <= 0.833:
         Power[1] = (daya_listrik - 0.66) / (0.833 - 0.66)
-    elif 0.833 <= daya_listrik <= 1.66:
+    elif 0.833 < daya_listrik <= 1.66:
         Power[1] = 1
     elif 1.66 < daya_listrik < 2.5:
         Power[1] = (2.5 - daya_listrik) / (2.5 - 1.66)
     else:
         Power[1] = 0
-    
-    # KwH Tinggi
+
+    # Fungsi keanggotaan KwHTinggi sesuai rumus
     if daya_listrik <= 1.66:
         Power[2] = 0
-    elif daya_listrik < 2.5:
+    elif 1.66 < daya_listrik < 2.5:
         Power[2] = (daya_listrik - 1.66) / (2.5 - 1.66)
-    else:
+    else:  # daya_listrik >= 2.5
         Power[2] = 1
 
-    # # Fungsi keanggotaan KwHRendah
-    # if daya_listrik <= 0.66:
-    #     Power[0] = 1
-    # elif 0.66 < daya_listrik < 0.83:
-    #     Power[0] = (0.83 - daya_listrik) / (0.83 - 0.66)
-    # else:
-    #     Power[0] = 0
-
-    # # Fungsi keanggotaan SKwHSedang
-    # if daya_listrik <= 0.66 or daya_listrik >= 2.5:
-    #     Power[1] = 0
-    # elif 0.66 < daya_listrik <= 0.833:
-    #     Power[1] = (daya_listrik - 0.66) / (0.833 - 0.66)
-    # elif 0.833 < daya_listrik <= 1.66:
-    #     Power[1] = 1
-    # elif 1.66 < daya_listrik < 2.5:
-    #     Power[1] = (2.5 - daya_listrik) / (2.5 - 1.66)
-    # else:
-    #     Power[1] = 0
-
-    # # Fungsi keanggotaan KwHTinggi
-    # if daya_listrik <= 1.66:
-    #     Power[2] = 0
-    # elif 1.66 < daya_listrik < 2.5:
-    #     Power[2] = (daya_listrik - 1.66) / (2.5 - 1.66)
-    # else:  # daya_listrik >= 2.5
-    #     Power[2] = 1
-
-    # if daya_listrik < 0.66:
-    #     Power[0] = 1
-    # elif daya_listrik < 1:
-    #     Power[0] = (1 - daya_listrik)/(1 - 0.83)
-    # else:
-    #     Power[0] = 0
-
-    # # energylistrik Sedang
-    # if daya_listrik < 0.83:
-    #     Power[1] = 0
-    # elif daya_listrik < 1.66:
-    #     Power[1] = (daya_listrik-0.83)/(1.6 - 0.83)
-    # elif daya_listrik < 2.5:
-    #     Power[1] = (2.5-daya_listrik)/(2.5 - 1.6)
-    # else:
-    #     Power[1] = 0
-
-    # # energylistrik Tinggi
-    # if daya_listrik < 2.33:
-    #     Power[2] = 0
-    # elif daya_listrik < 3.66:
-    #     Power[2] = (daya_listrik-3.66)/(3.66 - 2.33)
-    # else:
-    #     Power[2] = 1
-
-    # inputan banyak perangkat
-    # sedikit		0	4
-    # Sedang	1	1,5-2,5	3
-    # Banyak	2,5	3-x	x
-
-    # jumlahperangkatumah sedikit
-    if Sum_perangkat < 2:
-        jumlahperangkat[0] = 1
-    elif Sum_perangkat < 4:
-        jumlahperangkat[0] = (4 - Sum_perangkat)/(4 - 2)
-    else:
-        jumlahperangkat[0] = 0
-
-    # jumlahperangkatumah sedang
-    if Sum_perangkat < 2:
-        jumlahperangkat[1] = 0
-    elif Sum_perangkat < 4:
-        jumlahperangkat[1] = (Sum_perangkat - 2)/(4 - 2)
-    elif Sum_perangkat < 6:
-        jumlahperangkat[1] = 1
-    elif Sum_perangkat < 8:
-        jumlahperangkat[1] = (8 - Sum_perangkat)/(8 - 6)
-    else:
-        jumlahperangkat[1] = 0
-
-    # jumlahperangkatumah Banyak
-    if Sum_perangkat < 6:
-        jumlahperangkat[2] = 0
-    elif Sum_perangkat < 8:
-        jumlahperangkat[2] = (Sum_perangkat-6)/(8 - 6)
-    else:
-        jumlahperangkat[2] = 1
-
-    # inputan Daya Listrik
-    # Rendah	x	400	900
-    # Normal	400	900	1400
-    # Tinggi	900	1400	x
-
-    # Daya rendah
-    if Daya < 400:
-        HasilDaya[0] = 1
-    elif Daya < 900:
-        HasilDaya[0] = (900 - Daya)/(900 - 400)
-    else:
-        HasilDaya[0] = 0
-
-    # HasilDayasedang
-    if Daya < 400:
-        HasilDaya[1] = 0
-    elif Daya < 900:
-        HasilDaya[1] = (Daya-400)/(900 - 400)
-    elif Daya < 1400:
-        HasilDaya[1] = (1400 - Daya)/(1400-900)
-    else:
-        HasilDaya[1] = 0
-
-    # HasilDaya Banyak
-    if Daya < 900:
-        HasilDaya[2] = 0
-    elif Daya < 1400:
-        HasilDaya[2] = (Daya-900)/(1400-900)
-    else:
-        HasilDaya[2] = 1
-
-    # Inputan waktu Penggunaan
-    # Cepat		0-6	8
-    # Normal	6	8-12	14
-    # Lama	12	14-24	24
-
-    if waktu < 6:
+    # Fungsi keanggotaan waktu sesuai rumus
+    if waktu <= 6:
         stopwatch[0] = 1
-    elif waktu < 8:
-        stopwatch[0] = (8 - waktu)/(8 - 6)
+    elif 6 < waktu < 8:
+        stopwatch[0] = (8 - waktu) / (8 - 6)
     else:
         stopwatch[0] = 0
 
-    # stopwatchumah sedang
-    if waktu < 6:
+    # stopwatch sedang sesuai rumus
+    if waktu <= 6 or waktu >= 12:
         stopwatch[1] = 0
-    elif waktu < 8:
-        stopwatch[1] = (waktu - 6)/(8 - 6)
-    elif waktu < 10:
+    elif 6 < waktu <= 8:
+        stopwatch[1] = (waktu - 6) / (8 - 6)
+    elif 8 < waktu <= 10:
         stopwatch[1] = 1
-    elif waktu < 12:
-        stopwatch[1] = (12 - waktu)/(12 - 10)
+    elif 10 < waktu < 12:
+        stopwatch[1] = (12 - waktu) / (12 - 10)
     else:
         stopwatch[1] = 0
 
-    # stopwatchumah Banyak
-    if waktu < 10:
+    # stopwatch lama sesuai rumus
+    if waktu <= 10:
         stopwatch[2] = 0
-    elif waktu < 12:
-        stopwatch[2] = (waktu-10)/(12 - 10)
-    else:
+    elif 10 < waktu <= 12:
+        stopwatch[2] = (waktu - 10) / (12 - 10)
+    else:  # waktu > 12
         stopwatch[2] = 1
 
-    # biaya listrik murah
-    if biaya < 4000:
+    # Fungsi keanggotaan Daya sesuai rumus
+    if Daya <= 900:
+        HasilDaya[0] = 1
+    elif 900 < Daya <= 1300:
+        HasilDaya[0] = (1300 - Daya) / (1300 - 900)
+    else:
+        HasilDaya[0] = 0
+
+    # HasilDaya Normal sesuai rumus
+    if Daya <= 900 or Daya >= 2200:
+        HasilDaya[1] = 0
+    elif 900 < Daya <= 1300:
+        HasilDaya[1] = (Daya - 900) / (1300 - 900)
+    elif 1300 < Daya < 2200:
+        HasilDaya[1] = (2200 - Daya) / (2200 - 1300)
+    else:
+        HasilDaya[1] = 0
+
+    # HasilDaya Tinggi sesuai rumus
+    if Daya <= 1300:
+        HasilDaya[2] = 0
+    elif 1300 < Daya < 2200:
+        HasilDaya[2] = (Daya - 1300) / (2200 - 1300)
+    else:  # Daya >= 2200
+        HasilDaya[2] = 1
+
+    # Fungsi keanggotaan jumlah perangkat sesuai rumus
+    if Sum_perangkat <= 2:
+        jumlahperangkat[0] = 1
+    elif 2 < Sum_perangkat < 4:
+        jumlahperangkat[0] = (4 - Sum_perangkat) / (4 - 2)
+    else:
+        jumlahperangkat[0] = 0
+
+    # jumlahperangkat sedang sesuai rumus
+    if Sum_perangkat <= 2 or Sum_perangkat >= 8:
+        jumlahperangkat[1] = 0
+    elif 2 < Sum_perangkat <= 4:
+        jumlahperangkat[1] = (Sum_perangkat - 2) / (4 - 2)
+    elif 4 < Sum_perangkat <= 6:
+        jumlahperangkat[1] = 1
+    elif 6 < Sum_perangkat < 8:
+        jumlahperangkat[1] = (8 - Sum_perangkat) / (8 - 6)
+    else:
+        jumlahperangkat[1] = 0
+
+    # jumlahperangkat Banyak sesuai rumus
+    if Sum_perangkat <= 6:
+        jumlahperangkat[2] = 0
+    elif 6 < Sum_perangkat < 8:
+        jumlahperangkat[2] = (Sum_perangkat - 6) / (8 - 6)
+    else:  # Sum_perangkat >= 8
+        jumlahperangkat[2] = 1
+
+    # Fungsi keanggotaan biaya listrik sesuai rumus
+    if biaya <= 7600:
         biayalistrik[0] = 1
-    elif biaya < 7000:
-        biayalistrik[0] = (7000 - biaya)/(7000 - 4000)
+    elif 7600 < biaya < 13000:
+        biayalistrik[0] = (13000 - biaya) / (13000 - 7600)
     else:
         biayalistrik[0] = 0
 
-    # biaya mahal
-    if biaya < 4000:
+    # biaya mahal sesuai rumus
+    if biaya <= 7600:
         biayalistrik[1] = 0
-    elif biaya < 7000:
-        biayalistrik[1] = (biaya - 4000)/(7000 - 4000)
-    else:
+    elif 7600 < biaya < 13000:
+        biayalistrik[1] = (biaya - 7600) / (13000 - 7600)
+    else:  # biaya >= 13000
         biayalistrik[1] = 1
     # end fuzzyfication
 

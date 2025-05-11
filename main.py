@@ -79,16 +79,49 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
     penggunaan_normal = 1
     penggunaan_tinggi = 2
 
+    # fuzzyfication
+    # energy listrik
+    # RENDAH	0	0,66	1
+    # SEDANG	0,833	1,66	2,5
+    # TINGGI	2,33	3,66	4
+    # energylistrik rendah
 
-        # Fungsi keanggotaan KwHRendah sesuai rumus
+    # # KwH Rendah
+    # if daya_listrik <= 0.66:
+    #     Power[0] = 1
+    # elif daya_listrik < 0.83:
+    #     Power[0] = (0.83 - daya_listrik) / (0.83 - 0.66)
+    # else:
+    #     Power[0] = 0
+    
+    # # KwH Sedang
+    # if daya_listrik <= 0.66 or daya_listrik >= 2.5:
+    #     Power[1] = 0
+    # elif 0.66 < daya_listrik <= 0.833:
+    #     Power[1] = (daya_listrik - 0.66) / (0.833 - 0.66)
+    # elif 0.833 <= daya_listrik <= 1.66:
+    #     Power[1] = 1
+    # elif 1.66 < daya_listrik < 2.5:
+    #     Power[1] = (2.5 - daya_listrik) / (2.5 - 1.66)
+    
+    # # KwH Tinggi
+    # if daya_listrik <= 1.66:
+    #     Power[2] = 0
+    # elif daya_listrik < 2.5:
+    #     Power[2] = (daya_listrik - 1.66) / (2.5 - 1.66)
+    # else:
+    #     Power[2] = 1
+
+   ## b. Fungsi keanggotaan KwH
+    # KwH Rendah
     if daya_listrik <= 0.66:
         Power[0] = 1
-    elif 0.66 < daya_listrik <= 0.83:
+    elif 0.66 < daya_listrik < 0.83:
         Power[0] = (0.83 - daya_listrik) / (0.83 - 0.66)
-    else:
+    else:  # daya_listrik >= 0.83
         Power[0] = 0
 
-    # Fungsi keanggotaan KwHSedang sesuai rumus
+    # KwH Sedang
     if daya_listrik <= 0.66 or daya_listrik >= 2.5:
         Power[1] = 0
     elif 0.66 < daya_listrik <= 0.833:
@@ -100,7 +133,7 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
     else:
         Power[1] = 0
 
-    # Fungsi keanggotaan KwHTinggi sesuai rumus
+    # KwH Tinggi
     if daya_listrik <= 1.66:
         Power[2] = 0
     elif 1.66 < daya_listrik < 2.5:
@@ -108,69 +141,42 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
     else:  # daya_listrik >= 2.5
         Power[2] = 1
 
-    # Fungsi keanggotaan waktu sesuai rumus
-    if waktu <= 6:
-        stopwatch[0] = 1
-    elif 6 < waktu < 8:
-        stopwatch[0] = (8 - waktu) / (8 - 6)
-    else:
-        stopwatch[0] = 0
 
-    # stopwatch sedang sesuai rumus
-    if waktu <= 6 or waktu >= 12:
-        stopwatch[1] = 0
-    elif 6 < waktu <= 8:
-        stopwatch[1] = (waktu - 6) / (8 - 6)
-    elif 8 < waktu <= 10:
-        stopwatch[1] = 1
-    elif 10 < waktu < 12:
-        stopwatch[1] = (12 - waktu) / (12 - 10)
-    else:
-        stopwatch[1] = 0
+    # if daya_listrik < 0.66:
+    #     Power[0] = 1
+    # elif daya_listrik < 1:
+    #     Power[0] = (1 - daya_listrik)/(1 - 0.83)
+    # else:
+    #     Power[0] = 0
 
-    # stopwatch lama sesuai rumus
-    if waktu <= 10:
-        stopwatch[2] = 0
-    elif 10 < waktu <= 12:
-        stopwatch[2] = (waktu - 10) / (12 - 10)
-    else:  # waktu > 12
-        stopwatch[2] = 1
+    # # energylistrik Sedang
+    # if daya_listrik < 0.83:
+    #     Power[1] = 0
+    # elif daya_listrik < 1.66:
+    #     Power[1] = (daya_listrik-0.83)/(1.6 - 0.83)
+    # elif daya_listrik < 2.5:
+    #     Power[1] = (2.5-daya_listrik)/(2.5 - 1.6)
+    # else:
+    #     Power[1] = 0
 
-    # Fungsi keanggotaan Daya sesuai rumus
-    if Daya <= 900:
-        HasilDaya[0] = 1
-    elif 900 < Daya <= 1300:
-        HasilDaya[0] = (1300 - Daya) / (1300 - 900)
-    else:
-        HasilDaya[0] = 0
+    # # energylistrik Tinggi
+    # if daya_listrik < 2.33:
+    #     Power[2] = 0
+    # elif daya_listrik < 3.66:
+    #     Power[2] = (daya_listrik-3.66)/(3.66 - 2.33)
+    # else:
+    #     Power[2] = 1
 
-    # HasilDaya Normal sesuai rumus
-    if Daya <= 900 or Daya >= 2200:
-        HasilDaya[1] = 0
-    elif 900 < Daya <= 1300:
-        HasilDaya[1] = (Daya - 900) / (1300 - 900)
-    elif 1300 < Daya < 2200:
-        HasilDaya[1] = (2200 - Daya) / (2200 - 1300)
-    else:
-        HasilDaya[1] = 0
-
-    # HasilDaya Tinggi sesuai rumus
-    if Daya <= 1300:
-        HasilDaya[2] = 0
-    elif 1300 < Daya < 2200:
-        HasilDaya[2] = (Daya - 1300) / (2200 - 1300)
-    else:  # Daya >= 2200
-        HasilDaya[2] = 1
-
-    # Fungsi keanggotaan jumlah perangkat sesuai rumus
+    ## d. Fungsi keanggotaan Jumlah Perangkat
+    # Jumlah Perangkat Sedikit
     if Sum_perangkat <= 2:
         jumlahperangkat[0] = 1
     elif 2 < Sum_perangkat < 4:
         jumlahperangkat[0] = (4 - Sum_perangkat) / (4 - 2)
-    else:
+    else:  # Sum_perangkat >= 4
         jumlahperangkat[0] = 0
 
-    # jumlahperangkat sedang sesuai rumus
+    # Jumlah Perangkat Sedang
     if Sum_perangkat <= 2 or Sum_perangkat >= 8:
         jumlahperangkat[1] = 0
     elif 2 < Sum_perangkat <= 4:
@@ -182,7 +188,7 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
     else:
         jumlahperangkat[1] = 0
 
-    # jumlahperangkat Banyak sesuai rumus
+    # Jumlah Perangkat Banyak
     if Sum_perangkat <= 6:
         jumlahperangkat[2] = 0
     elif 6 < Sum_perangkat < 8:
@@ -190,15 +196,81 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
     else:  # Sum_perangkat >= 8
         jumlahperangkat[2] = 1
 
-    # Fungsi keanggotaan biaya listrik sesuai rumus
+    # inputan Daya Listrik
+    # Rendah	x	400	900
+    # Normal	400	900	1400
+    # Tinggi	900	1400	x
+
+    ## c. Fungsi keanggotaan Daya Listrik
+    # Daya Listrik Rendah
+    if Daya <= 900:
+        HasilDaya[0] = 1
+    elif 900 < Daya < 1300:
+        HasilDaya[0] = (1300 - Daya) / (1300 - 900)
+    else:  # Daya >= 1300
+        HasilDaya[0] = 0
+
+    # Daya Listrik Sedang
+    if Daya <= 900 or Daya >= 2200:
+        HasilDaya[1] = 0
+    elif 900 < Daya <= 1300:
+        HasilDaya[1] = (Daya - 900) / (1300 - 900)
+    elif 1300 < Daya < 2200:
+        HasilDaya[1] = (2200 - Daya) / (2200 - 1300)
+    else:
+        HasilDaya[1] = 0
+
+    # Daya Listrik Tinggi
+    if Daya <= 1300:
+        HasilDaya[2] = 0
+    elif 1300 < Daya < 2200:
+        HasilDaya[2] = (Daya - 1300) / (2200 - 1300)
+    else:  # Daya >= 2200
+        HasilDaya[2] = 1
+
+    # Inputan waktu Penggunaan
+    # Cepat		0-6	8
+    # Normal	6	8-12	14
+    # Lama	12	14-24	24
+
+    ## a. Fungsi keanggotaan waktu pengguna
+    # Waktu Cepat
+    if waktu <= 6:
+        stopwatch[0] = 1
+    elif 6 < waktu < 8:
+        stopwatch[0] = (8 - waktu) / (8 - 6)
+    else:  # waktu >= 8
+        stopwatch[0] = 0
+
+    # Waktu Sedang
+    if waktu <= 6 or waktu >= 12:
+        stopwatch[1] = 0
+    elif 6 < waktu <= 8:
+        stopwatch[1] = (waktu - 6) / (8 - 6)
+    elif 8 < waktu <= 10:
+        stopwatch[1] = 1
+    elif 10 < waktu < 12:
+        stopwatch[1] = (12 - waktu) / (12 - 10)
+    else:
+        stopwatch[1] = 0
+
+    # Waktu Lama
+    if waktu <= 10:
+        stopwatch[2] = 0
+    elif 10 < waktu < 12:
+        stopwatch[2] = (waktu - 10) / (12 - 10)
+    else:  # waktu >= 12
+        stopwatch[2] = 1
+
+    # Biaya Listrik Normal
     if biaya <= 7600:
         biayalistrik[0] = 1
     elif 7600 < biaya < 13000:
         biayalistrik[0] = (13000 - biaya) / (13000 - 7600)
-    else:
+    else:  # biaya >= 13000
         biayalistrik[0] = 0
 
-    # biaya mahal sesuai rumus
+    # Biaya Listrik Mahal
     if biaya <= 7600:
         biayalistrik[1] = 0
     elif 7600 < biaya < 13000:

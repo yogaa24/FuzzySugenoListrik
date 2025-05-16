@@ -29,12 +29,17 @@ if 'FIREBASE_CREDENTIALS' in os.environ:
 
 
 def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=0):
-    # Input values
-    daya_listrik = float(Power)
-    Sum_perangkat = float(jumlahperangkat)
-    Daya = float(HasilDaya)
-    waktu = float(stopwatch)
-    biaya = float(biayalistrik)
+    # Save original input values before they get overwritten
+    original_power = float(Power)
+    original_jumlahperangkat = float(jumlahperangkat)
+    original_hasildaya = float(HasilDaya)
+    original_stopwatch = float(stopwatch)
+    original_biaya = float(biayalistrik)
+    
+    # Print raw inputs at the beginning to verify what's coming in
+    print("Raw input values received by fuzzyLogic:")
+    print(f"Power: {original_power}, jumlahperangkat: {original_jumlahperangkat}, " +
+          f"HasilDaya: {original_hasildaya}, stopwatch: {original_stopwatch}, biayalistrik: {original_biaya}")
     
     # Initialize membership arrays
     Power = [0, 0, 0]        # [Rendah, Sedang, Tinggi]
@@ -52,142 +57,142 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
     
     # KwH Membership Functions
     # KwH Rendah: [0, 0.66, 0.83]
-    if daya_listrik <= 0.66:
+    if original_power <= 0.66:
         Power[0] = 1
-    elif 0.66 < daya_listrik < 0.83:
-        Power[0] = (0.83 - daya_listrik) / (0.83 - 0.66)
+    elif 0.66 < original_power < 0.83:
+        Power[0] = (0.83 - original_power) / (0.83 - 0.66)
     else:
         Power[0] = 0
         
     # KwH Sedang: [0.66, 0.833, 1.66, 2.5]
-    if daya_listrik <= 0.66 or daya_listrik >= 2.5:
+    if original_power <= 0.66 or original_power >= 2.5:
         Power[1] = 0
-    elif 0.66 < daya_listrik <= 0.833:
-        Power[1] = (daya_listrik - 0.66) / (0.833 - 0.66)
-    elif 0.833 < daya_listrik <= 1.66:
+    elif 0.66 < original_power <= 0.833:
+        Power[1] = (original_power - 0.66) / (0.833 - 0.66)
+    elif 0.833 < original_power <= 1.66:
         Power[1] = 1
-    elif 1.66 < daya_listrik < 2.5:
-        Power[1] = (2.5 - daya_listrik) / (2.5 - 1.66)
+    elif 1.66 < original_power < 2.5:
+        Power[1] = (2.5 - original_power) / (2.5 - 1.66)
     else:
         Power[1] = 0
         
     # KwH Tinggi: [1.66, 2.5, 4]
-    if daya_listrik <= 1.66:
+    if original_power <= 1.66:
         Power[2] = 0
-    elif 1.66 < daya_listrik < 2.5:
-        Power[2] = (daya_listrik - 1.66) / (2.5 - 1.66)
+    elif 1.66 < original_power < 2.5:
+        Power[2] = (original_power - 1.66) / (2.5 - 1.66)
     else:
         Power[2] = 1
     
     # Jumlah Perangkat Membership Functions
     # Perangkat Sedikit: [0, 2, 4]
-    if Sum_perangkat <= 2:
+    if original_jumlahperangkat <= 2:
         jumlahperangkat[0] = 1
-    elif 2 < Sum_perangkat < 4:
-        jumlahperangkat[0] = (4 - Sum_perangkat) / (4 - 2)
+    elif 2 < original_jumlahperangkat < 4:
+        jumlahperangkat[0] = (4 - original_jumlahperangkat) / (4 - 2)
     else:
         jumlahperangkat[0] = 0
         
     # Perangkat Sedang: [2, 4, 6, 8]
-    if Sum_perangkat <= 2 or Sum_perangkat >= 8:
+    if original_jumlahperangkat <= 2 or original_jumlahperangkat >= 8:
         jumlahperangkat[1] = 0
-    elif 2 < Sum_perangkat <= 4:
-        jumlahperangkat[1] = (Sum_perangkat - 2) / (4 - 2)
-    elif 4 < Sum_perangkat <= 6:
+    elif 2 < original_jumlahperangkat <= 4:
+        jumlahperangkat[1] = (original_jumlahperangkat - 2) / (4 - 2)
+    elif 4 < original_jumlahperangkat <= 6:
         jumlahperangkat[1] = 1
-    elif 6 < Sum_perangkat < 8:
-        jumlahperangkat[1] = (8 - Sum_perangkat) / (8 - 6)
+    elif 6 < original_jumlahperangkat < 8:
+        jumlahperangkat[1] = (8 - original_jumlahperangkat) / (8 - 6)
     else:
         jumlahperangkat[1] = 0
         
     # Perangkat Banyak: [6, 8, 10]
-    if Sum_perangkat <= 6:
+    if original_jumlahperangkat <= 6:
         jumlahperangkat[2] = 0
-    elif 6 < Sum_perangkat < 8:
-        jumlahperangkat[2] = (Sum_perangkat - 6) / (8 - 6)
+    elif 6 < original_jumlahperangkat < 8:
+        jumlahperangkat[2] = (original_jumlahperangkat - 6) / (8 - 6)
     else:
         jumlahperangkat[2] = 1
     
     # Daya Listrik Membership Functions
     # Daya Rendah: [0, 900, 1300]
-    if Daya <= 900:
+    if original_hasildaya <= 900:
         HasilDaya[0] = 1
-    elif 900 < Daya < 1300:
-        HasilDaya[0] = (1300 - Daya) / (1300 - 900)
+    elif 900 < original_hasildaya < 1300:
+        HasilDaya[0] = (1300 - original_hasildaya) / (1300 - 900)
     else:
         HasilDaya[0] = 0
         
     # Daya Normal: [900, 1300, 2200]
-    if Daya <= 900 or Daya >= 2200:
+    if original_hasildaya <= 900 or original_hasildaya >= 2200:
         HasilDaya[1] = 0
-    elif 900 < Daya <= 1300:
-        HasilDaya[1] = (Daya - 900) / (1300 - 900)
-    elif 1300 < Daya < 2200:
-        HasilDaya[1] = (2200 - Daya) / (2200 - 1300)
+    elif 900 < original_hasildaya <= 1300:
+        HasilDaya[1] = (original_hasildaya - 900) / (1300 - 900)
+    elif 1300 < original_hasildaya < 2200:
+        HasilDaya[1] = (2200 - original_hasildaya) / (2200 - 1300)
     else:
         HasilDaya[1] = 0
         
     # Daya Tinggi: [1300, 2200, 3000]
-    if Daya <= 1300:
+    if original_hasildaya <= 1300:
         HasilDaya[2] = 0
-    elif 1300 < Daya < 2200:
-        HasilDaya[2] = (Daya - 1300) / (2200 - 1300)
+    elif 1300 < original_hasildaya < 2200:
+        HasilDaya[2] = (original_hasildaya - 1300) / (2200 - 1300)
     else:
         HasilDaya[2] = 1
     
     # Waktu Membership Functions
     # Waktu Cepat: [0, 6, 8]
-    if waktu <= 6:
+    if original_stopwatch <= 6:
         stopwatch[0] = 1
-    elif 6 < waktu < 8:
-        stopwatch[0] = (8 - waktu) / (8 - 6)
+    elif 6 < original_stopwatch < 8:
+        stopwatch[0] = (8 - original_stopwatch) / (8 - 6)
     else:
         stopwatch[0] = 0
         
     # Waktu Normal: [6, 8, 10, 12]
-    if waktu <= 6 or waktu >= 12:
+    if original_stopwatch <= 6 or original_stopwatch >= 12:
         stopwatch[1] = 0
-    elif 6 < waktu <= 8:
-        stopwatch[1] = (waktu - 6) / (8 - 6)
-    elif 8 < waktu <= 10:
+    elif 6 < original_stopwatch <= 8:
+        stopwatch[1] = (original_stopwatch - 6) / (8 - 6)
+    elif 8 < original_stopwatch <= 10:
         stopwatch[1] = 1
-    elif 10 < waktu < 12:
-        stopwatch[1] = (12 - waktu) / (12 - 10)
+    elif 10 < original_stopwatch < 12:
+        stopwatch[1] = (12 - original_stopwatch) / (12 - 10)
     else:
         stopwatch[1] = 0
         
     # Waktu Lama: [10, 12, 24]
-    if waktu <= 10:
+    if original_stopwatch <= 10:
         stopwatch[2] = 0
-    elif 10 < waktu < 12:
-        stopwatch[2] = (waktu - 10) / (12 - 10)
+    elif 10 < original_stopwatch < 12:
+        stopwatch[2] = (original_stopwatch - 10) / (12 - 10)
     else:
         stopwatch[2] = 1
     
     # Biaya Listrik Membership Functions
     # Biaya Normal: [0, 7600, 13000]
-    if biaya <= 7600:
+    if original_biaya <= 7600:
         biayalistrik[0] = 1
-    elif 7600 < biaya < 13000:
-        biayalistrik[0] = (13000 - biaya) / (13000 - 7600)
+    elif 7600 < original_biaya < 13000:
+        biayalistrik[0] = (13000 - original_biaya) / (13000 - 7600)
     else:
         biayalistrik[0] = 0
         
     # Biaya Mahal: [7600, 13000, 20000]
-    if biaya <= 7600:
+    if original_biaya <= 7600:
         biayalistrik[1] = 0
-    elif 7600 < biaya < 13000:
-        biayalistrik[1] = (biaya - 7600) / (13000 - 7600)
+    elif 7600 < original_biaya < 13000:
+        biayalistrik[1] = (original_biaya - 7600) / (13000 - 7600)
     else:
         biayalistrik[1] = 1
     
     # Debug info with all 5 input values properly printed
-    print("Input values:")
-    print(f"Daya Listrik (Power): {daya_listrik} KwH (Membership: {Power})")
-    print(f"Waktu (Stopwatch): {waktu} jam (Membership: {stopwatch})")
-    print(f"Hasil Daya: {Daya} watt (Membership: {HasilDaya})")
-    print(f"Jumlah Perangkat: {Sum_perangkat} (Membership: {jumlahperangkat})")
-    print(f"Biaya: {biaya} (Membership: {biayalistrik})")
+    print("Fuzzified membership values:")
+    print(f"Daya Listrik (Power): {original_power} KwH (Membership: {Power})")
+    print(f"Waktu (Stopwatch): {original_stopwatch} jam (Membership: {stopwatch})")
+    print(f"Hasil Daya (HasilDaya): {original_hasildaya} watt (Membership: {HasilDaya})")
+    print(f"Jumlah Perangkat: {original_jumlahperangkat} (Membership: {jumlahperangkat})")
+    print(f"Biaya: {original_biaya} (Membership: {biayalistrik})")
     
     # Initialize rule activation values and defuzzification variables
     rule_values = {}

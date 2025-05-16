@@ -181,10 +181,10 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
     else:
         biayalistrik[1] = 1
     
-    # Debug info
+    # Debug info with all 5 input values properly printed
     print("Input values:")
-    print(f"Waktu: {waktu} jam (Membership: {stopwatch})")
-    print(f"Daya Listrik: {daya_listrik} KwH (Membership: {Power})")
+    print(f"Daya Listrik (Power): {daya_listrik} KwH (Membership: {Power})")
+    print(f"Waktu (Stopwatch): {waktu} jam (Membership: {stopwatch})")
     print(f"Hasil Daya: {Daya} watt (Membership: {HasilDaya})")
     print(f"Jumlah Perangkat: {Sum_perangkat} (Membership: {jumlahperangkat})")
     print(f"Biaya: {biaya} (Membership: {biayalistrik})")

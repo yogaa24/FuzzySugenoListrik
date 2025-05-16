@@ -199,6 +199,17 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
     numerator = 0
     denominator = 0
     
+    # Define linguistic terms for better readability in logs
+    power_terms = ["Rendah", "Sedang", "Tinggi"]
+    stopwatch_terms = ["Cepat", "Normal", "Lama"]
+    hasildaya_terms = ["Rendah", "Normal", "Tinggi"]
+    jumlahperangkat_terms = ["Sedikit", "Sedang", "Banyak"]
+    biayalistrik_terms = ["Normal", "Mahal"]
+    output_terms = ["Penggunaan Rendah", "Penggunaan Sedang", "Penggunaan Tinggi"]
+    
+    # List to keep track of active rules (rules with non-zero strength)
+    active_rules = []
+    
     # Evaluate all rules
     for i in range(3):  # Power
         for j in range(3):  # stopwatch
@@ -224,6 +235,18 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
                         # Calculate rule strength using min operator
                         rule_strength = min(Power[i], stopwatch[j], HasilDaya[k], jumlahperangkat[l], biayalistrik[m])
                         
+                        # Only store non-zero rules
+                        if rule_strength > 0:
+                            # Create a readable rule description
+                            rule_description = f"IF Power {power_terms[i]} AND Waktu {stopwatch_terms[j]} AND HasilDaya {hasildaya_terms[k]} AND JumlahPerangkat {jumlahperangkat_terms[l]} AND BiayaListrik {biayalistrik_terms[m]} THEN {output_terms[output_class]}"
+                            
+                            # Add to active rules list with rule strength and output class
+                            active_rules.append({
+                                "description": rule_description,
+                                "strength": rule_strength,
+                                "output_class": output_class
+                            })
+                        
                         # Accumulate for defuzzification
                         numerator += rule_strength * output_class
                         denominator += rule_strength
@@ -232,13 +255,24 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
                         rule_name = f"Rule_{i}_{j}_{k}_{l}_{m}"
                         rule_values[rule_name] = rule_strength
     
+    # Sort active rules by strength (descending)
+    active_rules.sort(key=lambda x: x["strength"], reverse=True)
+    
+    # Log active rules
+    print("\nActive Rules (strength > 0):")
+    if not active_rules:
+        print("No rules were activated with non-zero strength!")
+    else:
+        for idx, rule in enumerate(active_rules):
+            print(f"{idx+1}. {rule['description']} (Strength: {rule['strength']:.4f})")
+    
     # Defuzzification (weighted average)
     if denominator == 0:  # Avoid division by zero
         z = 0
     else:
         z = numerator / denominator
     
-    print(f"Defuzzification result (z): {z}")
+    print(f"\nDefuzzification result (z): {z}")
     
     # Determine output classification
     if z <= 0.67:

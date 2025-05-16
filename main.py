@@ -29,99 +29,37 @@ if 'FIREBASE_CREDENTIALS' in os.environ:
 
 
 def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=0):
-    # input Fuzzy
+    # Input values
     daya_listrik = float(Power)
     Sum_perangkat = float(jumlahperangkat)
     Daya = float(HasilDaya)
     waktu = float(stopwatch)
     biaya = float(biayalistrik)
-
-    Power = [0, 0, 0]
-    jumlahperangkat = [0, 0, 0]
-    HasilDaya = [0, 0, 0]
-    stopwatch = [0, 0, 0]
-    biayalistrik = [0, 0]
-    # 3333
-
-    rules = [[
-            [[[0, 0], [0, 0], [0, 0]],
-             [[0, 0], [0, 0], [0, 0]],
-             [[0, 0], [0, 0], [0, 0]]],
-            [[[0, 0], [0, 0], [0, 0]],
-             [[0, 0], [0, 0], [0, 0]],
-             [[0, 0], [0, 0], [0, 0]]],
-            [[[0, 0], [0, 0], [0, 0]],
-             [[0, 0], [0, 0], [0, 0]],
-             [[0, 0], [0, 0], [0, 0]]]],
-             [
-        [[[0, 0], [0, 0], [0, 0]],
-         [[0, 0], [0, 0], [0, 0]],
-         [[0, 0], [0, 0], [0, 0]]],
-        [[[0, 0], [0, 0], [0, 0]],
-         [[0, 0], [0, 0], [0, 0]],
-         [[0, 0], [0, 0], [0, 0]]],
-        [[[0, 0], [0, 0], [0, 0]],
-         [[0, 0], [0, 0], [0, 0]],
-         [[0, 0], [0, 0], [0, 0]]]],
-        [
-        [[[0, 0], [0, 0], [0, 0]],
-         [[0, 0], [0, 0], [0, 0]],
-         [[0, 0], [0, 0], [0, 0]]],
-            [[[0, 0], [0, 0], [0, 0]],
-             [[0, 0], [0, 0], [0, 0]],
-             [[0, 0], [0, 0], [0, 0]]],
-            [[[0, 0], [0, 0], [0, 0]],
-             [[0, 0], [0, 0], [0, 0]],
-             [[0, 0], [0, 0], [0, 0]]]]
-    ]
-
+    
+    # Initialize membership arrays
+    Power = [0, 0, 0]        # [Rendah, Sedang, Tinggi]
+    jumlahperangkat = [0, 0, 0]  # [Sedikit, Sedang, Banyak]
+    HasilDaya = [0, 0, 0]    # [Rendah, Normal, Tinggi]
+    stopwatch = [0, 0, 0]    # [Cepat, Normal, Lama]
+    biayalistrik = [0, 0]    # [Normal, Mahal]
+    
+    # Constants for defuzzification
     penggunaan_Rendah = 0
     penggunaan_normal = 1
     penggunaan_tinggi = 2
-
-    # fuzzyfication
-    # energy listrik
-    # RENDAH	0	0,66	1
-    # SEDANG	0,833	1,66	2,5
-    # TINGGI	2,33	3,66	4
-    # energylistrik rendah
-
-    # # KwH Rendah
-    # if daya_listrik <= 0.66:
-    #     Power[0] = 1
-    # elif daya_listrik < 0.83:
-    #     Power[0] = (0.83 - daya_listrik) / (0.83 - 0.66)
-    # else:
-    #     Power[0] = 0
     
-    # # KwH Sedang
-    # if daya_listrik <= 0.66 or daya_listrik >= 2.5:
-    #     Power[1] = 0
-    # elif 0.66 < daya_listrik <= 0.833:
-    #     Power[1] = (daya_listrik - 0.66) / (0.833 - 0.66)
-    # elif 0.833 <= daya_listrik <= 1.66:
-    #     Power[1] = 1
-    # elif 1.66 < daya_listrik < 2.5:
-    #     Power[1] = (2.5 - daya_listrik) / (2.5 - 1.66)
+    # Fuzzification
     
-    # # KwH Tinggi
-    # if daya_listrik <= 1.66:
-    #     Power[2] = 0
-    # elif daya_listrik < 2.5:
-    #     Power[2] = (daya_listrik - 1.66) / (2.5 - 1.66)
-    # else:
-    #     Power[2] = 1
-
-   ## b. Fungsi keanggotaan KwH
-    # KwH Rendah
+    # KwH Membership Functions
+    # KwH Rendah: [0, 0.66, 0.83]
     if daya_listrik <= 0.66:
         Power[0] = 1
     elif 0.66 < daya_listrik < 0.83:
         Power[0] = (0.83 - daya_listrik) / (0.83 - 0.66)
-    else:  # daya_listrik >= 0.83
+    else:
         Power[0] = 0
-
-    # KwH Sedang
+        
+    # KwH Sedang: [0.66, 0.833, 1.66, 2.5]
     if daya_listrik <= 0.66 or daya_listrik >= 2.5:
         Power[1] = 0
     elif 0.66 < daya_listrik <= 0.833:
@@ -132,51 +70,25 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
         Power[1] = (2.5 - daya_listrik) / (2.5 - 1.66)
     else:
         Power[1] = 0
-
-    # KwH Tinggi
+        
+    # KwH Tinggi: [1.66, 2.5, 4]
     if daya_listrik <= 1.66:
         Power[2] = 0
     elif 1.66 < daya_listrik < 2.5:
         Power[2] = (daya_listrik - 1.66) / (2.5 - 1.66)
-    else:  # daya_listrik >= 2.5
+    else:
         Power[2] = 1
-
-
-    # if daya_listrik < 0.66:
-    #     Power[0] = 1
-    # elif daya_listrik < 1:
-    #     Power[0] = (1 - daya_listrik)/(1 - 0.83)
-    # else:
-    #     Power[0] = 0
-
-    # # energylistrik Sedang
-    # if daya_listrik < 0.83:
-    #     Power[1] = 0
-    # elif daya_listrik < 1.66:
-    #     Power[1] = (daya_listrik-0.83)/(1.6 - 0.83)
-    # elif daya_listrik < 2.5:
-    #     Power[1] = (2.5-daya_listrik)/(2.5 - 1.6)
-    # else:
-    #     Power[1] = 0
-
-    # # energylistrik Tinggi
-    # if daya_listrik < 2.33:
-    #     Power[2] = 0
-    # elif daya_listrik < 3.66:
-    #     Power[2] = (daya_listrik-3.66)/(3.66 - 2.33)
-    # else:
-    #     Power[2] = 1
-
-    ## d. Fungsi keanggotaan Jumlah Perangkat
-    # Jumlah Perangkat Sedikit
+    
+    # Jumlah Perangkat Membership Functions
+    # Perangkat Sedikit: [0, 2, 4]
     if Sum_perangkat <= 2:
         jumlahperangkat[0] = 1
     elif 2 < Sum_perangkat < 4:
         jumlahperangkat[0] = (4 - Sum_perangkat) / (4 - 2)
-    else:  # Sum_perangkat >= 4
+    else:
         jumlahperangkat[0] = 0
-
-    # Jumlah Perangkat Sedang
+        
+    # Perangkat Sedang: [2, 4, 6, 8]
     if Sum_perangkat <= 2 or Sum_perangkat >= 8:
         jumlahperangkat[1] = 0
     elif 2 < Sum_perangkat <= 4:
@@ -187,30 +99,25 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
         jumlahperangkat[1] = (8 - Sum_perangkat) / (8 - 6)
     else:
         jumlahperangkat[1] = 0
-
-    # Jumlah Perangkat Banyak
+        
+    # Perangkat Banyak: [6, 8, 10]
     if Sum_perangkat <= 6:
         jumlahperangkat[2] = 0
     elif 6 < Sum_perangkat < 8:
         jumlahperangkat[2] = (Sum_perangkat - 6) / (8 - 6)
-    else:  # Sum_perangkat >= 8
+    else:
         jumlahperangkat[2] = 1
-
-    # inputan Daya Listrik
-    # Rendah	x	400	900
-    # Normal	400	900	1400
-    # Tinggi	900	1400	x
-
-    ## c. Fungsi keanggotaan Daya Listrik
-    # Daya Listrik Rendah
+    
+    # Daya Listrik Membership Functions
+    # Daya Rendah: [0, 900, 1300]
     if Daya <= 900:
         HasilDaya[0] = 1
     elif 900 < Daya < 1300:
         HasilDaya[0] = (1300 - Daya) / (1300 - 900)
-    else:  # Daya >= 1300
+    else:
         HasilDaya[0] = 0
-
-    # Daya Listrik Sedang
+        
+    # Daya Normal: [900, 1300, 2200]
     if Daya <= 900 or Daya >= 2200:
         HasilDaya[1] = 0
     elif 900 < Daya <= 1300:
@@ -219,30 +126,25 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
         HasilDaya[1] = (2200 - Daya) / (2200 - 1300)
     else:
         HasilDaya[1] = 0
-
-    # Daya Listrik Tinggi
+        
+    # Daya Tinggi: [1300, 2200, 3000]
     if Daya <= 1300:
         HasilDaya[2] = 0
     elif 1300 < Daya < 2200:
         HasilDaya[2] = (Daya - 1300) / (2200 - 1300)
-    else:  # Daya >= 2200
+    else:
         HasilDaya[2] = 1
-
-    # Inputan waktu Penggunaan
-    # Cepat		0-6	8
-    # Normal	6	8-12	14
-    # Lama	12	14-24	24
-
-    ## a. Fungsi keanggotaan waktu pengguna
-    # Waktu Cepat
+    
+    # Waktu Membership Functions
+    # Waktu Cepat: [0, 6, 8]
     if waktu <= 6:
         stopwatch[0] = 1
     elif 6 < waktu < 8:
         stopwatch[0] = (8 - waktu) / (8 - 6)
-    else:  # waktu >= 8
+    else:
         stopwatch[0] = 0
-
-    # Waktu Sedang
+        
+    # Waktu Normal: [6, 8, 10, 12]
     if waktu <= 6 or waktu >= 12:
         stopwatch[1] = 0
     elif 6 < waktu <= 8:
@@ -253,122 +155,87 @@ def fuzzyLogic(Power, jumlahperangkat=1, HasilDaya=0, stopwatch=0, biayalistrik=
         stopwatch[1] = (12 - waktu) / (12 - 10)
     else:
         stopwatch[1] = 0
-
-    # Waktu Lama
+        
+    # Waktu Lama: [10, 12, 24]
     if waktu <= 10:
         stopwatch[2] = 0
     elif 10 < waktu < 12:
         stopwatch[2] = (waktu - 10) / (12 - 10)
-    else:  # waktu >= 12
+    else:
         stopwatch[2] = 1
-
-    # Biaya Listrik Normal
+    
+    # Biaya Listrik Membership Functions
+    # Biaya Normal: [0, 7600, 13000]
     if biaya <= 7600:
         biayalistrik[0] = 1
     elif 7600 < biaya < 13000:
         biayalistrik[0] = (13000 - biaya) / (13000 - 7600)
-    else:  # biaya >= 13000
+    else:
         biayalistrik[0] = 0
-
-    # Biaya Listrik Mahal
+        
+    # Biaya Mahal: [7600, 13000, 20000]
     if biaya <= 7600:
         biayalistrik[1] = 0
     elif 7600 < biaya < 13000:
         biayalistrik[1] = (biaya - 7600) / (13000 - 7600)
-    else:  # biaya >= 13000
+    else:
         biayalistrik[1] = 1
-    # end fuzzyfication
-
-    print(waktu)
-    print(stopwatch)
-    print(daya_listrik)
-    print(Power)
-    print(Daya)
-    print(HasilDaya)
-    print(Sum_perangkat)
-    print(jumlahperangkat)
-    print(biaya)
-    print(biayalistrik)
-
-    defuzzy = 0
-    for i in range(3):
-        for j in range(3):
-            for k in range(3):
-                for l in range(3):
-                    for m in range(2):
-                        print('i:', i, ' j:', j, ' k:', k, 'l:', l, 'm:', m)
-                        rules[i][j][k][l][m] = min(
-                            stopwatch[j], Power[i], HasilDaya[k], jumlahperangkat[l], biayalistrik[m])
-                        defuzzy += rules[i][j][k][l][m]
-
-    z = (
-        # 1
-        (rules[0][0][0][0][0] * penggunaan_Rendah)+(rules[0][0][1][0][0] * penggunaan_Rendah)+(rules[0][0][2][0][0] * penggunaan_Rendah) +
-        (rules[0][1][0][0][0] * penggunaan_Rendah)+(rules[0][1][1][0][0] * penggunaan_Rendah)+(rules[0][1][2][0][0] * penggunaan_Rendah) +
-        (rules[0][2][0][0][0] * penggunaan_Rendah)+(rules[0][2][1][0][0] * penggunaan_Rendah)+(rules[0][2][2][0][0] * penggunaan_Rendah) +
-        (rules[1][0][0][0][0] * penggunaan_Rendah)+(rules[1][0][1][0][0] * penggunaan_Rendah)+(rules[1][0][2][0][0] * penggunaan_Rendah) +
-        (rules[1][1][0][0][0] * penggunaan_normal)+(rules[1][1][1][0][0] * penggunaan_normal)+(rules[1][1][2][0][0] * penggunaan_normal) +
-        (rules[1][2][0][0][0] * penggunaan_normal)+(rules[1][2][1][0][0] * penggunaan_normal)+(rules[1][2][2][0][0] * penggunaan_normal) +
-        (rules[2][0][0][0][0] * penggunaan_Rendah)+(rules[2][0][1][0][0] * penggunaan_Rendah)+(rules[2][0][2][0][0] * penggunaan_Rendah) +
-        (rules[2][1][0][0][0] * penggunaan_normal)+(rules[2][1][1][0][0] * penggunaan_normal)+(rules[2][1][2][0][0] * penggunaan_normal) +
-        (rules[2][2][0][0][0] * penggunaan_tinggi)+(rules[2][2][1][0][0] * penggunaan_tinggi)+(rules[2][2][2][0][0] * penggunaan_tinggi) +
-
-        # 2
-        (rules[0][0][0][1][0] * penggunaan_Rendah)+(rules[0][0][1][1][0] * penggunaan_Rendah)+(rules[0][0][2][1][0] * penggunaan_Rendah) +
-        (rules[0][1][0][1][0] * penggunaan_Rendah)+(rules[0][1][1][1][0] * penggunaan_Rendah)+(rules[0][1][2][1][0] * penggunaan_Rendah) +
-        (rules[0][2][0][1][0] * penggunaan_Rendah)+(rules[0][2][1][1][0] * penggunaan_Rendah)+(rules[0][2][2][1][0] * penggunaan_Rendah) +
-        (rules[1][0][0][1][0] * penggunaan_Rendah)+(rules[1][0][1][1][0] * penggunaan_Rendah)+(rules[1][0][2][1][0] * penggunaan_Rendah) +
-        (rules[1][1][0][1][0] * penggunaan_normal)+(rules[1][1][1][1][0] * penggunaan_normal)+(rules[1][1][2][1][0] * penggunaan_normal) +
-        (rules[1][2][0][1][0] * penggunaan_normal)+(rules[1][2][1][1][0] * penggunaan_normal)+(rules[1][2][2][1][0] * penggunaan_normal) +
-        (rules[2][0][0][1][0] * penggunaan_Rendah)+(rules[2][0][1][1][0] * penggunaan_Rendah)+(rules[2][0][2][1][0] * penggunaan_Rendah) +
-        (rules[2][1][0][1][0] * penggunaan_normal)+(rules[2][1][1][1][0] * penggunaan_normal)+(rules[2][1][2][1][0] * penggunaan_normal) +
-        (rules[2][2][0][1][0] * penggunaan_tinggi)+(rules[2][2][1][1][0] * penggunaan_tinggi)+(rules[2][2][2][1][0] * penggunaan_tinggi) +
-
-        # 3
-        (rules[0][0][0][2][0] * penggunaan_Rendah)+(rules[0][0][1][2][0] * penggunaan_Rendah)+(rules[0][0][2][2][0] * penggunaan_Rendah) +
-        (rules[0][1][0][2][0] * penggunaan_Rendah)+(rules[0][1][1][2][0] * penggunaan_Rendah)+(rules[0][1][2][2][0] * penggunaan_Rendah) +
-        (rules[0][2][0][2][0] * penggunaan_Rendah)+(rules[0][2][1][2][0] * penggunaan_Rendah)+(rules[0][2][2][2][0] * penggunaan_Rendah) +
-        (rules[1][0][0][2][0] * penggunaan_Rendah)+(rules[1][0][1][2][0] * penggunaan_Rendah)+(rules[1][0][2][2][0] * penggunaan_Rendah) +
-        (rules[1][1][0][2][0] * penggunaan_normal)+(rules[1][1][1][2][0] * penggunaan_normal)+(rules[1][1][2][2][0] * penggunaan_normal) +
-        (rules[1][2][0][2][0] * penggunaan_normal)+(rules[1][2][1][2][0] * penggunaan_normal)+(rules[1][2][2][2][0] * penggunaan_normal) +
-        (rules[2][0][0][2][0] * penggunaan_Rendah)+(rules[2][0][1][2][0] * penggunaan_Rendah)+(rules[2][0][2][2][0] * penggunaan_Rendah) +
-        (rules[2][1][0][2][0] * penggunaan_normal)+(rules[2][1][1][2][0] * penggunaan_normal)+(rules[2][1][2][2][0] * penggunaan_normal) +
-        (rules[2][2][0][2][0] * penggunaan_tinggi)+(rules[2][2][1][2][0] * penggunaan_tinggi)+(rules[2][2][2][2][0] * penggunaan_tinggi) +
-
-        # 1
-        (rules[0][0][0][0][1] * penggunaan_Rendah)+(rules[0][0][1][0][1] * penggunaan_Rendah)+(rules[0][0][2][0][1] * penggunaan_Rendah) +
-        (rules[0][1][0][0][1] * penggunaan_Rendah)+(rules[0][1][1][0][1] * penggunaan_Rendah)+(rules[0][1][2][0][1] * penggunaan_Rendah) +
-        (rules[0][2][0][0][1] * penggunaan_Rendah)+(rules[0][2][1][0][1] * penggunaan_Rendah)+(rules[0][2][2][0][1] * penggunaan_Rendah) +
-        (rules[1][0][0][0][1] * penggunaan_Rendah)+(rules[1][0][1][0][1] * penggunaan_Rendah)+(rules[1][0][2][0][1] * penggunaan_Rendah) +
-        (rules[1][1][0][0][1] * penggunaan_normal)+(rules[1][1][1][0][1] * penggunaan_normal)+(rules[1][1][2][0][1] * penggunaan_normal) +
-        (rules[1][2][0][0][1] * penggunaan_normal)+(rules[1][2][1][0][1] * penggunaan_normal)+(rules[1][2][2][0][1] * penggunaan_normal) +
-        (rules[2][0][0][0][1] * penggunaan_Rendah)+(rules[2][0][1][0][1] * penggunaan_Rendah)+(rules[2][0][2][0][1] * penggunaan_Rendah) +
-        (rules[2][1][0][0][1] * penggunaan_normal)+(rules[2][1][1][0][1] * penggunaan_normal)+(rules[2][1][2][0][1] * penggunaan_normal) +
-        (rules[2][2][0][0][1] * penggunaan_tinggi)+(rules[2][2][1][0][1] * penggunaan_tinggi)+(rules[2][2][2][0][1] * penggunaan_tinggi) +
-
-        # 2
-        (rules[0][0][0][1][1] * penggunaan_Rendah)+(rules[0][0][1][1][1] * penggunaan_Rendah)+(rules[0][0][2][1][1] * penggunaan_Rendah) +
-        (rules[0][1][0][1][1] * penggunaan_Rendah)+(rules[0][1][1][1][1] * penggunaan_Rendah)+(rules[0][1][2][1][1] * penggunaan_Rendah) +
-        (rules[0][2][0][1][1] * penggunaan_Rendah)+(rules[0][2][1][1][1] * penggunaan_Rendah)+(rules[0][2][2][1][1] * penggunaan_Rendah) +
-        (rules[1][0][0][1][1] * penggunaan_Rendah)+(rules[1][0][1][1][1] * penggunaan_Rendah)+(rules[1][0][2][1][1] * penggunaan_Rendah) +
-        (rules[1][1][0][1][1] * penggunaan_normal)+(rules[1][1][1][1][1] * penggunaan_normal)+(rules[1][1][2][1][1] * penggunaan_normal) +
-        (rules[1][2][0][1][1] * penggunaan_normal)+(rules[1][2][1][1][1] * penggunaan_normal)+(rules[1][2][2][1][1] * penggunaan_normal) +
-        (rules[2][0][0][1][1] * penggunaan_Rendah)+(rules[2][0][1][1][1] * penggunaan_Rendah)+(rules[2][0][2][1][1] * penggunaan_Rendah) +
-        (rules[2][1][0][1][1] * penggunaan_normal)+(rules[2][1][1][1][1] * penggunaan_normal)+(rules[2][1][2][1][1] * penggunaan_normal) +
-        (rules[2][2][0][1][1] * penggunaan_tinggi)+(rules[2][2][1][1][1] * penggunaan_tinggi)+(rules[2][2][2][1][1] * penggunaan_tinggi) +
-        # 3
-        (rules[0][0][0][2][1] * penggunaan_Rendah)+(rules[0][0][1][2][1] * penggunaan_Rendah)+(rules[0][0][2][2][1] * penggunaan_Rendah) +
-        (rules[0][1][0][2][1] * penggunaan_Rendah)+(rules[0][1][1][2][1] * penggunaan_Rendah)+(rules[0][1][2][2][1] * penggunaan_Rendah) +
-        (rules[0][2][0][2][1] * penggunaan_Rendah)+(rules[0][2][1][2][1] * penggunaan_Rendah)+(rules[0][2][2][2][1] * penggunaan_Rendah) +
-        (rules[1][0][0][2][1] * penggunaan_Rendah)+(rules[1][0][1][2][1] * penggunaan_Rendah)+(rules[1][0][2][2][1] * penggunaan_Rendah) +
-        (rules[1][1][0][2][1] * penggunaan_normal)+(rules[1][1][1][2][1] * penggunaan_normal)+(rules[1][1][2][2][1] * penggunaan_normal) +
-        (rules[1][2][0][2][1] * penggunaan_normal)+(rules[1][2][1][2][1] * penggunaan_normal)+(rules[1][2][2][2][1] * penggunaan_normal) +
-        (rules[2][0][0][2][1] * penggunaan_Rendah)+(rules[2][0][1][2][1] * penggunaan_Rendah)+(rules[2][0][2][2][1] * penggunaan_Rendah) +
-        (rules[2][1][0][2][1] * penggunaan_normal)+(rules[2][1][1][2][1] * penggunaan_normal)+(rules[2][1][2][2][1] * penggunaan_normal) +
-        (rules[2][2][0][2][1] * penggunaan_tinggi)+(rules[2][2][1][2][1] * penggunaan_tinggi)+(rules[2][2][2][2][1] * penggunaan_tinggi))/defuzzy
-
-    print("Z adalah : "+str(z))
-
+    
+    # Debug info
+    print("Input values:")
+    print(f"Waktu: {waktu} jam (Membership: {stopwatch})")
+    print(f"Daya Listrik: {daya_listrik} KwH (Membership: {Power})")
+    print(f"Hasil Daya: {Daya} watt (Membership: {HasilDaya})")
+    print(f"Jumlah Perangkat: {Sum_perangkat} (Membership: {jumlahperangkat})")
+    print(f"Biaya: {biaya} (Membership: {biayalistrik})")
+    
+    # Initialize rule activation values and defuzzification variables
+    rule_values = {}
+    numerator = 0
+    denominator = 0
+    
+    # Evaluate all rules
+    for i in range(3):  # Power
+        for j in range(3):  # stopwatch
+            for k in range(3):  # HasilDaya
+                for l in range(3):  # jumlahperangkat
+                    for m in range(2):  # biayalistrik
+                        # Determine output class based on rule
+                        if i == 0:  # Power Rendah
+                            output_class = penggunaan_Rendah
+                        elif i == 1:  # Power Sedang
+                            if j == 0:  # stopwatch Cepat
+                                output_class = penggunaan_Rendah
+                            else:  # stopwatch Normal or Lama
+                                output_class = penggunaan_normal
+                        else:  # Power Tinggi
+                            if j == 0:  # stopwatch Cepat
+                                output_class = penggunaan_Rendah
+                            elif j == 1:  # stopwatch Normal
+                                output_class = penggunaan_normal
+                            else:  # stopwatch Lama
+                                output_class = penggunaan_tinggi
+                        
+                        # Calculate rule strength using min operator
+                        rule_strength = min(Power[i], stopwatch[j], HasilDaya[k], jumlahperangkat[l], biayalistrik[m])
+                        
+                        # Accumulate for defuzzification
+                        numerator += rule_strength * output_class
+                        denominator += rule_strength
+                        
+                        # Store rule value for debugging
+                        rule_name = f"Rule_{i}_{j}_{k}_{l}_{m}"
+                        rule_values[rule_name] = rule_strength
+    
+    # Defuzzification (weighted average)
+    if denominator == 0:  # Avoid division by zero
+        z = 0
+    else:
+        z = numerator / denominator
+    
+    print(f"Defuzzification result (z): {z}")
+    
+    # Determine output classification
     if z <= 0.67:
         return {
             "fuzy": round(z, 2),

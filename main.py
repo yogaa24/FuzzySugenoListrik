@@ -401,10 +401,10 @@ def getData(arrayWaktu, daya):
         if 'JumlahPerangkat' in dataTerakhir:
             dataPerangkat = dataTerakhir['JumlahPerangkat']
             
-        # Fungsi fuzzy logic
+        # Fungsi fuzzy logic - FIXED: Pass dataPerangkat instead of hardcoded value 3
         dataFuzy.append({
             "waktu": datetime.strptime(arrayWaktu[i], "%Y-%m-%d").strftime("%d - %m - %Y"),
-            "dataFuzy": fuzzyLogic(energyTerakhir, 3, daya, stopwatch, dataTerakhir['HargaListrik']),
+            "dataFuzy": fuzzyLogic(energyTerakhir, dataPerangkat, daya, stopwatch, dataTerakhir['HargaListrik']),
         })
         
         # Tabel hasil
